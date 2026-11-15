@@ -20,10 +20,13 @@ input,select,button{width:100%;min-height:44px;border-radius:8px;font-size:15px}
 input,select{background:#171717;color:white;border:1px solid #555;padding:10px}
 button{border:0;background:#a33b3b;color:white;font-weight:bold;padding:10px;cursor:pointer}
 button.secondary{background:#444}
+button.danger{background:#743333}
 button:disabled{opacity:.5;cursor:not-allowed}
 .status{text-align:center;color:#aaa;font-size:13px;margin:10px 0 0}
 .connected{color:#8bd49a}
 .player{display:flex;align-items:center;gap:12px;background:#303030;border-radius:8px;padding:11px;margin-top:8px}
+.player-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.player button{width:auto;min-width:72px;min-height:34px;padding:7px 12px;font-size:13px}
 .seat{width:30px;height:30px;border-radius:50%;background:#a33b3b;display:grid;place-items:center;flex-shrink:0}
 .hidden{display:none!important}
 .muted{color:#aaa;font-size:13px;line-height:1.45}
@@ -40,10 +43,19 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .savebar{position:sticky;bottom:8px;background:#242424;border:1px solid #555;padding:10px;border-radius:10px;margin-top:15px}
 .small{font-size:12px;color:#aaa}
 .notice{border-left:3px solid #b98b54;padding:9px 12px;background:#302a23;color:#e6d6c5;font-size:13px;line-height:1.45;margin:12px 0}
+.validation{padding:12px;border-radius:8px;background:#303030;margin-top:12px;font-size:13px;line-height:1.5}
+.validation.error{border-left:3px solid #d45b5b}
+.validation.success{border-left:3px solid #65b77a}
+.validation.warning{border-left:3px solid #d2a45b}
+.validation ul{padding-left:20px;margin:8px 0}
+.qr-layout{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.qr-layout img{width:160px;height:160px;background:white;padding:8px;border-radius:8px}
+.link-box{overflow-wrap:anywhere;background:#171717;padding:10px;border-radius:8px;font-size:13px;color:#ddd;margin:8px 0}
 @media(max-width:480px){
 .setting-grid,.character-list{grid-template-columns:1fr}
 body{padding:14px 11px}
 .panel{padding:15px}
+.qr-layout{justify-content:center}
 }
 </style>
 </head>
@@ -64,6 +76,20 @@ body{padding:14px 11px}
   <p class="muted">The Game Teller is separate from the player count.</p>
 </section>
 
+<section id="sharePanel" class="panel">
+  <h2>Invite players</h2>
+  <p class="muted">Share this link or let players scan the QR code to open the game.</p>
+  <div class="qr-layout">
+    <img id="qrImage" alt="QR code for joining this game">
+    <div style="flex:1;min-width:180px">
+      <strong>Game link</strong>
+      <div id="gameLink" class="link-box"></div>
+      <button id="copyLink" class="secondary">Copy Game Link</button>
+      <p id="copyStatus" class="small"></p>
+    </div>
+  </div>
+</section>
+
 <section id="lobby" class="panel">
   <h2>Players <span id="count" class="small">0 / 15</span></h2>
   <div id="players"><p class="muted">Waiting for players...</p></div>
@@ -72,8 +98,8 @@ body{padding:14px 11px}
 
 <section id="tellerPanel" class="panel hidden">
   <h2>Game Teller Control Room</h2>
-  <p class="muted">Configure the game before starting. These settings are saved to the shared game room.</p>
-  <div class="notice">This is the settings interface only. Character automation, rule enforcement, and phase progression are not implemented yet. Settings will not make unsupported character abilities work automatically.</div>
+  <p class="muted">Configure and verify the game before starting.</p>
+  <div class="notice">Script verification and player removal are available here. Full role assignment, night actions, private character information, voting, and game progression still require their own game systems.</div>
 
   <div class="tabs" id="tabs">
     <button class="active" data-tab="characters">Characters</button>
@@ -117,8 +143,13 @@ body{padding:14px 11px}
     <label class="check"><input type="checkbox" name="includeExperimental"> Include experimental characters</label>
 
     <h3>Optional character selection</h3>
-    <p class="muted">These are selection preferences, not a complete character database. The actual role engine and script validation are still to come.</p>
+    <p class="muted">Choose characters to include in the selected script.</p>
     <div id="characterList" class="character-list"></div>
+
+    <h3>Script verification</h3>
+    <p class="muted">Check the selected script for missing roles, invalid selections, and configuration problems.</p>
+    <button type="button" id="verifyScript">Verify Script</button>
+    <div id="validationResults" class="hidden" aria-live="polite"></div>
   </div>
 
   <div class="tabpage hidden" data-page="timing">
@@ -175,7 +206,7 @@ body{padding:14px 11px}
     <label class="check"><input type="checkbox" name="automaticExecution"> Automatically resolve executions</label>
     <label class="check"><input type="checkbox" name="automaticVictoryCheck"> Automatically check victory conditions</label>
     <label class="check"><input type="checkbox" name="pauseForUnsupportedAbilities"> Pause for Game Teller when an ability is unsupported or needs judgment</label>
-    <div class="notice">Automatic options are saved as preferences. They will only take effect when the corresponding game systems are implemented and tested.</div>
+    <div class="notice">These are saved preferences. They only take effect when the corresponding game systems are implemented.</div>
   </div>
 
   <div class="tabpage hidden" data-page="privacy">
@@ -301,7 +332,12 @@ function connect() {
   });
 
   socket.addEventListener("message",event=>{
-    const msg=JSON.parse(event.data);
+    let msg;
+    try {
+      msg=JSON.parse(event.data);
+    } catch {
+      return;
+    }
 
     if(msg.type==="state"){
       latestState=msg.state;
@@ -311,11 +347,19 @@ function connect() {
     if(msg.type==="error"){
       setStatus(msg.message);
       $("saveStatus").textContent=msg.message;
+      $("validationResults").classList.remove("hidden");
+      $("validationResults").className="validation error";
+      $("validationResults").textContent=msg.message;
     }
 
     if(msg.type==="saved"){
       formDirty=false;
       $("saveStatus").textContent="Settings saved successfully.";
+    }
+
+    if(msg.type==="validation" || msg.type==="validationResult" ||
+       msg.type==="scriptValidation" || msg.type==="verifyResult"){
+      displayValidation(msg.result || msg.validation || msg);
     }
   });
 
@@ -335,7 +379,6 @@ function send(data) {
     setStatus("Not connected yet.");
     return;
   }
-
   socket.send(JSON.stringify({...data,id:clientId}));
 }
 
@@ -361,9 +404,23 @@ function renderState() {
     seat.textContent=i+1;
 
     const n=document.createElement("span");
+    n.className="player-name";
     n.textContent=p.name;
 
     row.append(seat,n);
+
+    if(isTeller){
+      const kick=document.createElement("button");
+      kick.type="button";
+      kick.className="danger";
+      kick.textContent="Kick";
+      kick.addEventListener("click",()=>{
+        if(!confirm("Kick "+p.name+" from this game?"))return;
+        send({type:"kickPlayer",targetId:p.id});
+      });
+      row.append(kick);
+    }
+
     $("players").append(row);
   });
 
@@ -373,6 +430,24 @@ function renderState() {
 
   isTeller=latestState.tellerId===clientId;
   $("tellerPanel").classList.toggle("hidden",!isTeller);
+
+  // Re-render player controls after the Teller identity is known.
+  if(isTeller){
+    players.forEach((p,i)=>{
+      const row=$("players").children[i];
+      if(row && !row.querySelector("button")){
+        const kick=document.createElement("button");
+        kick.type="button";
+        kick.className="danger";
+        kick.textContent="Kick";
+        kick.addEventListener("click",()=>{
+          if(!confirm("Kick "+p.name+" from this game?"))return;
+          send({type:"kickPlayer",targetId:p.id});
+        });
+        row.append(kick);
+      }
+    });
+  }
 
   if(isTeller && !formInitialized){
     populateForm(latestState.settings||defaultSettings);
@@ -398,7 +473,6 @@ function populateForm(settings) {
   }
 
   const selected=new Set(merged.selectedCharacters||[]);
-
   document.querySelectorAll("[data-character]").forEach(input=>{
     input.checked=selected.has(input.value);
   });
@@ -449,6 +523,66 @@ function collectSettings() {
   return data;
 }
 
+function displayValidation(result) {
+  const box=$("validationResults");
+  box.replaceChildren();
+  box.classList.remove("hidden");
+
+  const errors=result.errors||[];
+  const warnings=result.warnings||[];
+  const valid=result.valid===true || (errors.length===0 && result.valid!==false);
+
+  box.className="validation "+(errors.length?"error":warnings.length?"warning":"success");
+
+  const heading=document.createElement("strong");
+  heading.textContent=valid?"Script verification passed":"Script verification found problems";
+  box.append(heading);
+
+  if(errors.length){
+    const title=document.createElement("p");
+    title.textContent="Errors:";
+    box.append(title);
+    const list=document.createElement("ul");
+    errors.forEach(item=>{
+      const li=document.createElement("li");
+      li.textContent=typeof item==="string"?item:JSON.stringify(item);
+      list.append(li);
+    });
+    box.append(list);
+  }
+
+  if(warnings.length){
+    const title=document.createElement("p");
+    title.textContent="Warnings:";
+    box.append(title);
+    const list=document.createElement("ul");
+    warnings.forEach(item=>{
+      const li=document.createElement("li");
+      li.textContent=typeof item==="string"?item:JSON.stringify(item);
+      list.append(li);
+    });
+    box.append(list);
+  }
+
+  if(!errors.length && !warnings.length){
+    const p=document.createElement("p");
+    p.textContent="No problems were reported.";
+    box.append(p);
+  }
+}
+
+$("verifyScript").addEventListener("click",()=>{
+  if(!isTeller)return;
+
+  const box=$("validationResults");
+  box.className="validation warning";
+  box.textContent="Checking script...";
+  box.classList.remove("hidden");
+
+  // Send the current form selections for verification.
+  send({type:"verifyScript",settings:collectSettings()});
+});
+
 $("settingsForm").addEventListener("input",()=>{
   formDirty=true;
 });
@@ -459,7 +593,6 @@ $("settingsForm").addEventListener("change",()=>{
 
 $("joinPlayer").addEventListener("click",()=>{
   const name=$("name").value.trim();
-
   if(!name)return setStatus("Enter your name first.");
 
   localStorage.setItem("clocktower-player-name",name);
@@ -468,7 +601,6 @@ $("joinPlayer").addEventListener("click",()=>{
 
 $("beTeller").addEventListener("click",()=>{
   const name=$("name").value.trim();
-
   if(!name)return setStatus("Enter your name first.");
 
   send({type:"claimTeller",name});
@@ -476,7 +608,6 @@ $("beTeller").addEventListener("click",()=>{
 
 $("settingsForm").addEventListener("submit",event=>{
   event.preventDefault();
-
   if(!isTeller)return;
 
   $("saveStatus").textContent="Saving...";
@@ -496,7 +627,27 @@ $("tabs").addEventListener("click",event=>{
   });
 });
 
+function setupGameLink() {
+  const url=location.href.split("#")[0];
+  $("gameLink").textContent=url;
+
+  // The QR image is generated by a remote QR service.
+  $("qrImage").src=
+    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+
+    encodeURIComponent(url);
+}
+
+$("copyLink").addEventListener("click",async()=>{
+  try{
+    await navigator.clipboard.writeText(location.href.split("#")[0]);
+    $("copyStatus").textContent="Game link copied.";
+  }catch{
+    $("copyStatus").textContent="Copy unavailable. Select the link above and copy it.";
+  }
+});
+
 buildCharacters();
+setupGameLink();
 connect();
 </script>
 </body>
