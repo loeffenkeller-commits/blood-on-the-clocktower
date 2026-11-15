@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171717">
+  <title>Blood on the Clocktower</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #171717;
+      color: #f2eee8;
+      font-family: Arial, sans-serif;
+      padding: 24px 16px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 27px;
+      margin: 20px 0 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 32px;
+    }
+
+    .panel {
+      background: #242424;
+      border: 1px solid #393939;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 9px;
+      font-weight: bold;
+    }
+
+    input, button {
+      width: 100%;
+      min-height: 50px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    input {
+      background: #171717;
+      color: white;
+      border: 1px solid #555;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      border: 0;
+      background: #a33b3b;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status {
+      color: #aaa;
+      font-size: 14px;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .status.connected {
+      color: #8bd49a;
+    }
+
+    .player-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .player-heading h2 {
+      font-size: 19px;
+      margin: 0;
+    }
+
+    .count {
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .player {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #303030;
+      border-radius: 8px;
+      padding: 13px;
+      margin-top: 8px;
+    }
+
+    .seat {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #a33b3b;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .empty {
+      color: #888;
+      text-align: center;
+      padding: 18px 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Blood on the Clocktower</h1>
+    <p class="subtitle">A multiplayer game of deduction</p>
+
+    <section class="panel">
+      <label for="playerName">Your player name</label>
+      <input
+        id="playerName"
+        maxlength="20"
+        placeholder="Enter your name"
+        autocomplete="nickname"
+      >
+      <button id="joinButton">Join Game</button>
+      <p id="connectionStatus" class="status">
+        Connecting to game...
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="player-heading">
+        <h2>Players</h2>
+        <span id="playerCount" class="count">0 / 15</span>
+      </div>
+      <div id="playerList">
+        <p class="empty">Waiting for players...</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const nameInput = document.getElementById("playerName");
+    const joinButton = document.getElementById("joinButton");
+    const statusText = document.getElementById("connectionStatus");
+    const playerList = document.getElementById("playerList");
+    const playerCount = document.getElementById("playerCount");
+
+    let socket;
+    let connected = false;
+
+    let playerId = localStorage.getItem("clocktower-player-id");
+
+    if (!playerId) {
+      playerId = crypto.randomUUID();
+      localStorage.setItem("clocktower-player-id", playerId);
+    }
+
+    nameInput.value =
+      localStorage.getItem("clocktower-player-name") || "";
+
+    function setStatus(message, isConnected = false) {
+      statusText.textContent = message;
+      statusText.classList.toggle("connected", isConnected);
+    }
+
+    function connect() {
+      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+
+      socket = new WebSocket(
+        protocol + "//" + location.host + "/api/ws"
+      );
+
+      socket.addEventListener("open", () => {
+        connected = true;
+        setStatus("Connected to game", true);
+        joinButton.disabled = false;
+
+        const savedName = localStorage.getItem("clocktower-player-name");
+
+        if (savedName) {
+          join(savedName);
+        }
+      });
+
+      socket.addEventListener("message", event => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "state") {
+          renderPlayers(data.state.players);
+        }
+
+        if (data.type === "error") {
+          setStatus(data.message);
+        }
+      });
+
+      socket.addEventListener("close", () => {
+        connected = false;
+        joinButton.disabled = true;
+        setStatus("Disconnected. Reconnecting...");
+
+        setTimeout(connect, 2000);
+      });
+
+      socket.addEventListener("error", () => {
+        setStatus("Connection problem. Retrying...");
+      });
+    }
+
+    function join(name) {
+      if (!connected) {
+        setStatus("Still connecting...");
+        return;
+      }
+
+      const cleanName = name.trim().slice(0, 20);
+
+      if (!cleanName) {
+        setStatus("Enter your name first.");
+        return;
+      }
+
+      localStorage.setItem("clocktower-player-name", cleanName);
+
+      socket.send(JSON.stringify({
+        type: "join",
+        id: playerId,
+        name: cleanName
+      }));
+    }
+
+    function renderPlayers(players) {
+      playerCount.textContent = players.length + " / 15";
+      playerList.replaceChildren();
+
+      if (players.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "Waiting for players...";
+        playerList.appendChild(empty);
+        return;
+      }
+
+      players.forEach((player, index) => {
+        const row = document.createElement("div");
+        row.className = "player";
+
+        const seat = document.createElement("span");
+        seat.className = "seat";
+        seat.textContent = index + 1;
+
+        const name = document.createElement("span");
+        name.textContent = player.name;
+
+        row.append(seat, name);
+        playerList.appendChild(row);
+      });
+    }
+
+    joinButton.disabled = true;
+
+    joinButton.addEventListener("click", () => {
+      join(nameInput.value);
+    });
+
+    nameInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        join(nameInput.value);
+      }
+    });
+
+    connect();
+  </script>
+</body>
+</html>
