@@ -1,306 +1,503 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#171717">
-  <title>Blood on the Clocktower</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #171717;
-      color: #f2eee8;
-      font-family: Arial, sans-serif;
-      padding: 24px 16px;
-    }
-
-    main {
-      width: 100%;
-      max-width: 520px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 27px;
-      margin: 20px 0 6px;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: #aaa;
-      margin-bottom: 32px;
-    }
-
-    .panel {
-      background: #242424;
-      border: 1px solid #393939;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 18px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 9px;
-      font-weight: bold;
-    }
-
-    input, button {
-      width: 100%;
-      min-height: 50px;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    input {
-      background: #171717;
-      color: white;
-      border: 1px solid #555;
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-
-    button {
-      border: 0;
-      background: #a33b3b;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .status {
-      color: #aaa;
-      font-size: 14px;
-      text-align: center;
-      margin-top: 12px;
-    }
-
-    .status.connected {
-      color: #8bd49a;
-    }
-
-    .player-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-
-    .player-heading h2 {
-      font-size: 19px;
-      margin: 0;
-    }
-
-    .count {
-      color: #aaa;
-      font-size: 14px;
-    }
-
-    .player {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: #303030;
-      border-radius: 8px;
-      padding: 13px;
-      margin-top: 8px;
-    }
-
-    .seat {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: #a33b3b;
-      display: grid;
-      place-items: center;
-      font-size: 13px;
-      flex-shrink: 0;
-    }
-
-    .empty {
-      color: #888;
-      text-align: center;
-      padding: 18px 0;
-    }
-
-    .hidden {
-      display: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#171717">
+<title>Blood on the Clocktower</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#171717;color:#f2eee8;font-family:Arial,sans-serif;padding:22px 15px}
+main{width:100%;max-width:720px;margin:0 auto}
+h1{text-align:center;font-size:27px;margin:18px 0 5px}
+.subtitle{text-align:center;color:#aaa;margin:0 0 26px}
+.panel{background:#242424;border:1px solid #393939;border-radius:12px;padding:18px;margin-bottom:15px}
+h2{font-size:19px;margin:0 0 14px}
+h3{font-size:16px;margin:22px 0 10px;color:#e8c5a0}
+label{display:block;font-size:14px;font-weight:bold;margin:12px 0 6px}
+input,select,button{width:100%;min-height:44px;border-radius:8px;font-size:15px}
+input,select{background:#171717;color:white;border:1px solid #555;padding:10px}
+button{border:0;background:#a33b3b;color:white;font-weight:bold;padding:10px;cursor:pointer}
+button.secondary{background:#444}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status{text-align:center;color:#aaa;font-size:13px;margin:10px 0 0}
+.connected{color:#8bd49a}
+.player{display:flex;align-items:center;gap:12px;background:#303030;border-radius:8px;padding:11px;margin-top:8px}
+.seat{width:30px;height:30px;border-radius:50%;background:#a33b3b;display:grid;place-items:center;flex-shrink:0}
+.hidden{display:none!important}
+.muted{color:#aaa;font-size:13px;line-height:1.45}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.tabs{display:flex;gap:7px;overflow-x:auto;margin:0 0 14px;padding-bottom:5px}
+.tabs button{white-space:nowrap;width:auto;min-height:38px;padding:8px 13px;background:#393939}
+.tabs button.active{background:#a33b3b}
+.setting-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{min-width:0}
+.check{display:flex;align-items:center;gap:10px;background:#303030;padding:11px;border-radius:8px;margin:7px 0;font-weight:normal}
+.check input{width:20px;min-height:20px;accent-color:#a33b3b}
+.character-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.character-list .check{margin:0}
+.savebar{position:sticky;bottom:8px;background:#242424;border:1px solid #555;padding:10px;border-radius:10px;margin-top:15px}
+.small{font-size:12px;color:#aaa}
+.notice{border-left:3px solid #b98b54;padding:9px 12px;background:#302a23;color:#e6d6c5;font-size:13px;line-height:1.45;margin:12px 0}
+@media(max-width:480px){
+.setting-grid,.character-list{grid-template-columns:1fr}
+body{padding:14px 11px}
+.panel{padding:15px}
+}
+</style>
 </head>
 <body>
-  <main>
-    <h1>Blood on the Clocktower</h1>
-    <p class="subtitle">A multiplayer game of deduction</p>
+<main>
+<h1>Blood on the Clocktower</h1>
+<p class="subtitle">A multiplayer game of deduction</p>
 
-    <section class="panel">
-      <label for="playerName">Your player name</label>
-      <input
-        id="playerName"
-        maxlength="20"
-        placeholder="Enter your name"
-        autocomplete="nickname"
-      >
-      <button id="joinButton">Join Game</button>
-      <p id="connectionStatus" class="status">
-        Connecting to game...
-      </p>
-    </section>
+<section id="entry" class="panel">
+  <h2>Enter the game</h2>
+  <label for="name">Your name</label>
+  <input id="name" maxlength="20" placeholder="Enter your name" autocomplete="nickname">
+  <div class="actions">
+    <button id="joinPlayer">Join as Player</button>
+    <button id="beTeller" class="secondary">Enter as Game Teller</button>
+  </div>
+  <p id="status" class="status">Connecting...</p>
+  <p class="muted">The Game Teller is separate from the player count.</p>
+</section>
 
-    <section class="panel">
-      <div class="player-heading">
-        <h2>Players</h2>
-        <span id="playerCount" class="count">0 / 15</span>
+<section id="lobby" class="panel">
+  <h2>Players <span id="count" class="small">0 / 15</span></h2>
+  <div id="players"><p class="muted">Waiting for players...</p></div>
+  <p id="tellerDisplay" class="muted">No Game Teller selected.</p>
+</section>
+
+<section id="tellerPanel" class="panel hidden">
+  <h2>Game Teller Control Room</h2>
+  <p class="muted">Configure the game before starting. These settings are saved to the shared game room.</p>
+  <div class="notice">This is the settings interface only. Character automation, rule enforcement, and phase progression are not implemented yet. Settings will not make unsupported character abilities work automatically.</div>
+
+  <div class="tabs" id="tabs">
+    <button class="active" data-tab="characters">Characters</button>
+    <button data-tab="timing">Timing</button>
+    <button data-tab="voting">Voting</button>
+    <button data-tab="rules">Game rules</button>
+    <button data-tab="automation">Automation</button>
+    <button data-tab="privacy">Privacy</button>
+  </div>
+
+  <form id="settingsForm">
+  <div class="tabpage" data-page="characters">
+    <h3>Script and character pool</h3>
+    <label for="script">Script</label>
+    <select id="script" name="script">
+      <option value="trouble-brewing">Trouble Brewing</option>
+      <option value="bad-moon-rising">Bad Moon Rising</option>
+      <option value="sects-and-violets">Sects &amp; Violets</option>
+      <option value="custom">Custom script</option>
+    </select>
+
+    <label for="customScriptName">Custom script name</label>
+    <input id="customScriptName" name="customScriptName" placeholder="Optional script name">
+
+    <div class="setting-grid">
+      <div class="field">
+        <label for="playerLimit">Maximum players (5–15)</label>
+        <input id="playerLimit" name="playerLimit" type="number" min="5" max="15">
       </div>
-      <div id="playerList">
-        <p class="empty">Waiting for players...</p>
+      <div class="field">
+        <label for="roleAssignment">Role assignment</label>
+        <select id="roleAssignment" name="roleAssignment">
+          <option value="random">Random</option>
+          <option value="manual">Manual by Game Teller</option>
+        </select>
       </div>
-    </section>
-  </main>
+    </div>
 
-  <script>
-    const nameInput = document.getElementById("playerName");
-    const joinButton = document.getElementById("joinButton");
-    const statusText = document.getElementById("connectionStatus");
-    const playerList = document.getElementById("playerList");
-    const playerCount = document.getElementById("playerCount");
+    <label class="check"><input type="checkbox" name="includeTravellers"> Include Travellers</label>
+    <label class="check"><input type="checkbox" name="includeFabled"> Include Fabled</label>
+    <label class="check"><input type="checkbox" name="includeExperimental"> Include experimental characters</label>
 
-    let socket;
-    let connected = false;
+    <h3>Optional character selection</h3>
+    <p class="muted">These are selection preferences, not a complete character database. The actual role engine and script validation are still to come.</p>
+    <div id="characterList" class="character-list"></div>
+  </div>
 
-    let playerId = localStorage.getItem("clocktower-player-id");
+  <div class="tabpage hidden" data-page="timing">
+    <h3>Round durations</h3>
+    <div class="setting-grid">
+      <div><label>First night (minutes)</label><input name="firstNightMinutes" type="number" min="1" max="60"></div>
+      <div><label>Other nights (minutes)</label><input name="otherNightMinutes" type="number" min="1" max="60"></div>
+      <div><label>Day discussion (minutes)</label><input name="dayDiscussionMinutes" type="number" min="1" max="120"></div>
+      <div><label>Nomination period (minutes)</label><input name="nominationMinutes" type="number" min="1" max="60"></div>
+      <div><label>Voting window (seconds)</label><input name="votingSeconds" type="number" min="5" max="300"></div>
+      <div><label>Execution resolution (minutes)</label><input name="executionMinutes" type="number" min="0" max="30"></div>
+    </div>
+    <label class="check"><input type="checkbox" name="showTimers"> Show countdown timers</label>
+    <label class="check"><input type="checkbox" name="announcePhaseChanges"> Announce phase changes</label>
+  </div>
 
-    if (!playerId) {
-      playerId = crypto.randomUUID();
-      localStorage.setItem("clocktower-player-id", playerId);
+  <div class="tabpage hidden" data-page="voting">
+    <h3>Nominations and voting</h3>
+    <div class="setting-grid">
+      <div>
+        <label>Nominations per day (0 = unlimited)</label>
+        <input name="nominationsPerDay" type="number" min="0" max="15">
+      </div>
+      <div>
+        <label>Tie handling</label>
+        <select name="tieHandling">
+          <option value="no-execution">No execution</option>
+          <option value="tied-execution">Allow tied execution</option>
+          <option value="teller-choice">Game Teller decides</option>
+        </select>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" name="allowSelfNomination"> Allow self-nomination</label>
+    <label class="check"><input type="checkbox" name="allowRepeatNominations"> Allow repeat nominations</label>
+    <label class="check"><input type="checkbox" name="allowDeadPlayersToSpeak"> Dead players may speak</label>
+    <label class="check"><input type="checkbox" name="deadPlayersKeepVote"> Dead players retain their unused vote</label>
+  </div>
+
+  <div class="tabpage hidden" data-page="rules">
+    <h3>Game rules and intervention</h3>
+    <label class="check"><input type="checkbox" name="allowRoleChanges"> Allow character changes</label>
+    <label class="check"><input type="checkbox" name="allowResurrection"> Allow resurrection</label>
+    <label class="check"><input type="checkbox" name="allowManualDeaths"> Allow manual death adjustments</label>
+    <label class="check"><input type="checkbox" name="allowManualInformation"> Allow information overrides</label>
+    <label class="check"><input type="checkbox" name="revealExecutedRole"> Reveal executed character</label>
+    <label class="check"><input type="checkbox" name="revealDeathCause"> Reveal cause of death</label>
+    <label class="check"><input type="checkbox" name="storytellerCanOverride"> Game Teller can intervene in unusual situations</label>
+  </div>
+
+  <div class="tabpage hidden" data-page="automation">
+    <h3>Automated game progression</h3>
+    <label class="check"><input type="checkbox" name="automaticPhaseProgression"> Automatically advance between phases</label>
+    <label class="check"><input type="checkbox" name="automaticVoting"> Automatically tally votes</label>
+    <label class="check"><input type="checkbox" name="automaticExecution"> Automatically resolve executions</label>
+    <label class="check"><input type="checkbox" name="automaticVictoryCheck"> Automatically check victory conditions</label>
+    <label class="check"><input type="checkbox" name="pauseForUnsupportedAbilities"> Pause for Game Teller when an ability is unsupported or needs judgment</label>
+    <div class="notice">Automatic options are saved as preferences. They will only take effect when the corresponding game systems are implemented and tested.</div>
+  </div>
+
+  <div class="tabpage hidden" data-page="privacy">
+    <h3>Game access and player tools</h3>
+    <label for="gameVisibility">Game visibility</label>
+    <select name="gameVisibility" id="gameVisibility">
+      <option value="unlisted">Unlisted (link required)</option>
+      <option value="private">Private</option>
+      <option value="public">Public</option>
+    </select>
+    <label class="check"><input type="checkbox" name="allowLateJoin"> Allow late joining</label>
+    <label class="check"><input type="checkbox" name="enableScreenSafeMode"> Enable screen-safe mode</label>
+    <label class="check"><input type="checkbox" name="enableSuspicionTokens"> Enable private suspicion tokens</label>
+    <label class="check"><input type="checkbox" name="enablePersonalNotes"> Enable private player notes</label>
+    <label class="check"><input type="checkbox" name="clearPrivateNotesAtEnd"> Clear private notes when the game ends</label>
+    <label class="check"><input type="checkbox" name="retainGameHistory"> Keep game event history</label>
+    <label class="check"><input type="checkbox" name="confirmDestructiveActions"> Require confirmation for reset/restart actions</label>
+    <div class="setting-grid">
+      <div>
+        <label>Reconnect grace period (minutes)</label>
+        <input name="reconnectGraceMinutes" type="number" min="0" max="60">
+      </div>
+    </div>
+  </div>
+
+  <div class="savebar">
+    <button type="submit" id="saveSettings">Save Game Settings</button>
+    <p class="small" id="saveStatus">Settings have not been changed.</p>
+  </div>
+  </form>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const statusEl = $("status");
+const clientIdKey = "clocktower-player-id";
+
+let clientId = localStorage.getItem(clientIdKey);
+if (!clientId) {
+  clientId = crypto.randomUUID();
+  localStorage.setItem(clientIdKey, clientId);
+}
+
+let socket;
+let connected = false;
+let latestState = null;
+let isTeller = false;
+let formDirty = false;
+let formInitialized = false;
+
+const characters = [
+  "Washerwoman","Librarian","Investigator","Chef","Empath","Fortune Teller",
+  "Undertaker","Monk","Ravenkeeper","Virgin","Slayer","Soldier","Mayor",
+  "Butler","Drunk","Recluse","Saint","Poisoner","Spy","Scarlet Woman",
+  "Baron","Godfather","Devil's Advocate","Assassin","Mastermind","Imp",
+  "Zombuul","Pukka","Shabaloth","Po","Goon","Professor","Grandmother",
+  "Sailor","Chambermaid","Exorcist","Innkeeper","Gambler","Gossip",
+  "Courtier","Tea Lady","Pacifist","Fool","Tinker","Moonchild",
+  "Snake Charmer","Flowergirl","Town Crier","Oracle","Savant","Artist",
+  "Juggler","Philosopher","Mutant","Sweetheart","Evil Twin","Witch",
+  "Cerenovus","Pit-Hag","Vortox","No Dashii","Fang Gu"
+];
+
+const defaultSettings = {
+  script:"trouble-brewing",
+  playerLimit:15,
+  roleAssignment:"random",
+  includeTravellers:false,
+  includeFabled:false,
+  includeExperimental:false,
+  customScriptName:"",
+  selectedCharacters:[],
+  firstNightMinutes:8,
+  otherNightMinutes:6,
+  dayDiscussionMinutes:8,
+  nominationMinutes:5,
+  votingSeconds:30,
+  executionMinutes:2,
+  announcePhaseChanges:true,
+  showTimers:true,
+  allowDeadPlayersToSpeak:true,
+  deadPlayersKeepVote:true,
+  nominationsPerDay:0,
+  tieHandling:"no-execution",
+  allowSelfNomination:false,
+  allowRepeatNominations:false,
+  automaticPhaseProgression:false,
+  automaticVoting:true,
+  automaticExecution:false,
+  automaticVictoryCheck:true,
+  pauseForUnsupportedAbilities:true,
+  storytellerCanOverride:true,
+  allowRoleChanges:true,
+  allowResurrection:true,
+  allowManualDeaths:true,
+  allowManualInformation:true,
+  revealExecutedRole:true,
+  revealDeathCause:false,
+  gameVisibility:"unlisted",
+  allowLateJoin:false,
+  reconnectGraceMinutes:10,
+  retainGameHistory:true,
+  clearPrivateNotesAtEnd:true,
+  enablePersonalNotes:true,
+  enableSuspicionTokens:true,
+  enableScreenSafeMode:true,
+  confirmDestructiveActions:true
+};
+
+function setStatus(text, ok=false) {
+  statusEl.textContent=text;
+  statusEl.classList.toggle("connected",ok);
+}
+
+function connect() {
+  const scheme=location.protocol==="https:"?"wss:":"ws:";
+  socket=new WebSocket(scheme+"//"+location.host+"/api/ws");
+
+  socket.addEventListener("open",()=>{
+    connected=true;
+    setStatus("Connected to game",true);
+  });
+
+  socket.addEventListener("message",event=>{
+    const msg=JSON.parse(event.data);
+
+    if(msg.type==="state"){
+      latestState=msg.state;
+      renderState();
     }
 
-    nameInput.value =
-      localStorage.getItem("clocktower-player-name") || "";
-
-    function setStatus(message, isConnected = false) {
-      statusText.textContent = message;
-      statusText.classList.toggle("connected", isConnected);
+    if(msg.type==="error"){
+      setStatus(msg.message);
+      $("saveStatus").textContent=msg.message;
     }
 
-    function connect() {
-      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-
-      socket = new WebSocket(
-        protocol + "//" + location.host + "/api/ws"
-      );
-
-      socket.addEventListener("open", () => {
-        connected = true;
-        setStatus("Connected to game", true);
-        joinButton.disabled = false;
-
-        const savedName = localStorage.getItem("clocktower-player-name");
-
-        if (savedName) {
-          join(savedName);
-        }
-      });
-
-      socket.addEventListener("message", event => {
-        const data = JSON.parse(event.data);
-
-        if (data.type === "state") {
-          renderPlayers(data.state.players);
-        }
-
-        if (data.type === "error") {
-          setStatus(data.message);
-        }
-      });
-
-      socket.addEventListener("close", () => {
-        connected = false;
-        joinButton.disabled = true;
-        setStatus("Disconnected. Reconnecting...");
-
-        setTimeout(connect, 2000);
-      });
-
-      socket.addEventListener("error", () => {
-        setStatus("Connection problem. Retrying...");
-      });
+    if(msg.type==="saved"){
+      formDirty=false;
+      $("saveStatus").textContent="Settings saved successfully.";
     }
+  });
 
-    function join(name) {
-      if (!connected) {
-        setStatus("Still connecting...");
-        return;
-      }
+  socket.addEventListener("close",()=>{
+    connected=false;
+    setStatus("Disconnected. Reconnecting...");
+    setTimeout(connect,2000);
+  });
 
-      const cleanName = name.trim().slice(0, 20);
+  socket.addEventListener("error",()=>{
+    setStatus("Connection problem. Retrying...");
+  });
+}
 
-      if (!cleanName) {
-        setStatus("Enter your name first.");
-        return;
-      }
+function send(data) {
+  if(!connected){
+    setStatus("Not connected yet.");
+    return;
+  }
 
-      localStorage.setItem("clocktower-player-name", cleanName);
+  socket.send(JSON.stringify({...data,id:clientId}));
+}
 
-      socket.send(JSON.stringify({
-        type: "join",
-        id: playerId,
-        name: cleanName
-      }));
+function renderState() {
+  const players=latestState.players||[];
+
+  $("count").textContent=players.length+" / "+(latestState.settings.playerLimit||15);
+  $("players").replaceChildren();
+
+  if(!players.length){
+    const p=document.createElement("p");
+    p.className="muted";
+    p.textContent="Waiting for players...";
+    $("players").append(p);
+  }
+
+  players.forEach((p,i)=>{
+    const row=document.createElement("div");
+    row.className="player";
+
+    const seat=document.createElement("span");
+    seat.className="seat";
+    seat.textContent=i+1;
+
+    const n=document.createElement("span");
+    n.textContent=p.name;
+
+    row.append(seat,n);
+    $("players").append(row);
+  });
+
+  $("tellerDisplay").textContent=latestState.tellerName
+    ?"Game Teller: "+latestState.tellerName
+    :"No Game Teller selected.";
+
+  isTeller=latestState.tellerId===clientId;
+  $("tellerPanel").classList.toggle("hidden",!isTeller);
+
+  if(isTeller && !formInitialized){
+    populateForm(latestState.settings||defaultSettings);
+    formInitialized=true;
+  }
+}
+
+function populateForm(settings) {
+  const merged={...defaultSettings,...settings};
+  const form=$("settingsForm");
+
+  for(const [key,value] of Object.entries(merged)){
+    const field=form.elements.namedItem(key);
+    if(!field)continue;
+
+    if(field.type==="checkbox"){
+      field.checked=Boolean(value);
+    } else if(key==="selectedCharacters"){
+      continue;
+    } else {
+      field.value=value;
     }
+  }
 
-    function renderPlayers(players) {
-      playerCount.textContent = players.length + " / 15";
-      playerList.replaceChildren();
+  const selected=new Set(merged.selectedCharacters||[]);
 
-      if (players.length === 0) {
-        const empty = document.createElement("p");
-        empty.className = "empty";
-        empty.textContent = "Waiting for players...";
-        playerList.appendChild(empty);
-        return;
-      }
+  document.querySelectorAll("[data-character]").forEach(input=>{
+    input.checked=selected.has(input.value);
+  });
 
-      players.forEach((player, index) => {
-        const row = document.createElement("div");
-        row.className = "player";
+  formDirty=false;
+}
 
-        const seat = document.createElement("span");
-        seat.className = "seat";
-        seat.textContent = index + 1;
+function buildCharacters() {
+  const target=$("characterList");
+  const unique=[...new Set(characters)];
 
-        const name = document.createElement("span");
-        name.textContent = player.name;
+  unique.forEach(name=>{
+    const label=document.createElement("label");
+    label.className="check";
 
-        row.append(seat, name);
-        playerList.appendChild(row);
-      });
+    const input=document.createElement("input");
+    input.type="checkbox";
+    input.value=name;
+    input.dataset.character="1";
+
+    const text=document.createElement("span");
+    text.textContent=name;
+
+    label.append(input,text);
+    target.append(label);
+  });
+}
+
+function collectSettings() {
+  const data={};
+
+  for(const element of $("settingsForm").elements){
+    if(!element.name)continue;
+
+    if(element.type==="checkbox"){
+      data[element.name]=element.checked;
+    } else if(element.type==="number"){
+      data[element.name]=Number(element.value);
+    } else {
+      data[element.name]=element.value;
     }
+  }
 
-    joinButton.disabled = true;
+  data.selectedCharacters=[
+    ...document.querySelectorAll("[data-character]:checked")
+  ].map(x=>x.value);
 
-    joinButton.addEventListener("click", () => {
-      join(nameInput.value);
-    });
+  return data;
+}
 
-    nameInput.addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        join(nameInput.value);
-      }
-    });
+$("settingsForm").addEventListener("input",()=>{
+  formDirty=true;
+});
 
-    connect();
-  </script>
+$("settingsForm").addEventListener("change",()=>{
+  formDirty=true;
+});
+
+$("joinPlayer").addEventListener("click",()=>{
+  const name=$("name").value.trim();
+
+  if(!name)return setStatus("Enter your name first.");
+
+  localStorage.setItem("clocktower-player-name",name);
+  send({type:"join",name});
+});
+
+$("beTeller").addEventListener("click",()=>{
+  const name=$("name").value.trim();
+
+  if(!name)return setStatus("Enter your name first.");
+
+  send({type:"claimTeller",name});
+});
+
+$("settingsForm").addEventListener("submit",event=>{
+  event.preventDefault();
+
+  if(!isTeller)return;
+
+  $("saveStatus").textContent="Saving...";
+  send({type:"saveSettings",settings:collectSettings()});
+});
+
+$("tabs").addEventListener("click",event=>{
+  const button=event.target.closest("button[data-tab]");
+  if(!button)return;
+
+  document.querySelectorAll(".tabs button").forEach(b=>{
+    b.classList.toggle("active",b===button);
+  });
+
+  document.querySelectorAll(".tabpage").forEach(page=>{
+    page.classList.toggle("hidden",page.dataset.page!==button.dataset.tab);
+  });
+});
+
+buildCharacters();
+connect();
+</script>
 </body>
 </html>
