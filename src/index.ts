@@ -11,37 +11,24 @@ interface GameSettings {
   [key: string]: unknown;
 }
 
-interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-  roleCounts: {
-    Townsfolk: number;
-    Outsider: number;
-    Minion: number;
-    Demon: number;
-  };
-}
-
 interface LobbyState {
   players: Player[];
   phase: string;
   tellerId: string | null;
   tellerName: string | null;
   settings: GameSettings;
-  kickedPlayers: string[];
+}
+
+interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  playerCount: number;
 }
 
 interface Env {
   ASSETS: Fetcher;
   GAME: DurableObjectNamespace<GameRoom>;
-}
-
-type RoleType = "Townsfolk" | "Outsider" | "Minion" | "Demon";
-
-interface ScriptDefinition {
-  name: string;
-  roles: Record<RoleType, string[]>;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
@@ -90,157 +77,69 @@ const DEFAULT_SETTINGS: GameSettings = {
   confirmDestructiveActions: true
 };
 
-const SCRIPTS: Record<string, ScriptDefinition> = {
+const SCRIPT_ROLES: Record<string, Record<string, string[]>> = {
   "trouble-brewing": {
-    name: "Trouble Brewing",
-    roles: {
-      Townsfolk: [
-        "Washerwoman",
-        "Librarian",
-        "Investigator",
-        "Chef",
-        "Empath",
-        "Fortune Teller",
-        "Undertaker",
-        "Monk",
-        "Ravenkeeper",
-        "Virgin",
-        "Slayer",
-        "Soldier",
-        "Mayor"
-      ],
-      Outsider: [
-        "Butler",
-        "Drunk",
-        "Recluse",
-        "Saint"
-      ],
-      Minion: [
-        "Poisoner",
-        "Spy",
-        "Baron",
-        "Scarlet Woman"
-      ],
-      Demon: [
-        "Imp"
-      ]
-    }
+    townsfolk: [
+      "Washerwoman", "Librarian", "Investigator", "Chef",
+      "Empath", "Fortune Teller", "Undertaker", "Monk",
+      "Ravenkeeper", "Virgin", "Slayer", "Soldier", "Mayor"
+    ],
+    outsiders: ["Butler", "Drunk", "Recluse", "Saint"],
+    minions: ["Poisoner", "Spy", "Scarlet Woman", "Baron"],
+    demons: ["Imp"]
   },
 
   "bad-moon-rising": {
-    name: "Bad Moon Rising",
-    roles: {
-      Townsfolk: [
-        "Grandmother",
-        "Sailor",
-        "Chambermaid",
-        "Exorcist",
-        "Innkeeper",
-        "Gambler",
-        "Gossip",
-        "Courtier",
-        "Professor",
-        "Minstrel",
-        "Tea Lady",
-        "Pacifist",
-        "Fool"
-      ],
-      Outsider: [
-        "Goon",
-        "Lunatic",
-        "Tinker",
-        "Moonchild"
-      ],
-      Minion: [
-        "Godfather",
-        "Devil's Advocate",
-        "Assassin",
-        "Mastermind"
-      ],
-      Demon: [
-        "Zombuul",
-        "Pukka",
-        "Shabaloth",
-        "Po"
-      ]
-    }
+    townsfolk: [
+      "Grandmother", "Sailor", "Chambermaid", "Exorcist",
+      "Innkeeper", "Gambler", "Gossip", "Courtier",
+      "Professor", "Minstrel", "Tea Lady", "Pacifist", "Fool"
+    ],
+    outsiders: ["Tinker", "Moonchild", "Goon", "Lunatic"],
+    minions: ["Godfather", "Devil's Advocate", "Assassin", "Mastermind"],
+    demons: ["Zombuul", "Pukka", "Shabaloth", "Po"]
   },
 
   "sects-and-violets": {
-    name: "Sects & Violets",
-    roles: {
-      Townsfolk: [
-        "Clockmaker",
-        "Dreamer",
-        "Snake Charmer",
-        "Mathematician",
-        "Flowergirl",
-        "Town Crier",
-        "Oracle",
-        "Savant",
-        "Seamstress",
-        "Philosopher",
-        "Artist",
-        "Juggler",
-        "Sage"
-      ],
-      Outsider: [
-        "Mutant",
-        "Sweetheart",
-        "Barber",
-        "Klutz"
-      ],
-      Minion: [
-        "Evil Twin",
-        "Witch",
-        "Cerenovus",
-        "Pit-Hag"
-      ],
-      Demon: [
-        "Fang Gu",
-        "Vigormortis",
-        "No Dashii",
-        "Vortox"
-      ]
-    }
+    townsfolk: [
+      "Snake Charmer", "Flowergirl", "Town Crier", "Oracle",
+      "Savant", "Seamstress", "Philosopher", "Artist",
+      "Juggler", "Sage", "Clockmaker", "Dreamer", "Mathematician"
+    ],
+    outsiders: ["Mutant", "Sweetheart", "Barber", "Klutz"],
+    minions: ["Evil Twin", "Witch", "Cerenovus", "Pit-Hag"],
+    demons: ["Fang Gu", "Vigormortis", "No Dashii", "Vortox"]
   }
 };
+
+const ROLE_TYPES: Record<string, string> = {};
+
+for (const script of Object.values(SCRIPT_ROLES)) {
+  for (const [type, roles] of Object.entries(script)) {
+    for (const role of roles) {
+      ROLE_TYPES[role.toLowerCase()] = type;
+    }
+  }
+}
 
 const PLAYER_COUNTS: Record<number, {
-  Townsfolk: number;
-  Outsider: number;
-  Minion: number;
-  Demon: number;
+  townsfolk: number;
+  outsiders: number;
+  minions: number;
+  demons: number;
 }> = {
-  5:  { Townsfolk: 3, Outsider: 0, Minion: 1, Demon: 1 },
-  6:  { Townsfolk: 3, Outsider: 1, Minion: 1, Demon: 1 },
-  7:  { Townsfolk: 5, Outsider: 0, Minion: 1, Demon: 1 },
-  8:  { Townsfolk: 5, Outsider: 1, Minion: 1, Demon: 1 },
-  9:  { Townsfolk: 5, Outsider: 2, Minion: 1, Demon: 1 },
-  10: { Townsfolk: 7, Outsider: 0, Minion: 2, Demon: 1 },
-  11: { Townsfolk: 7, Outsider: 1, Minion: 2, Demon: 1 },
-  12: { Townsfolk: 7, Outsider: 2, Minion: 2, Demon: 1 },
-  13: { Townsfolk: 9, Outsider: 0, Minion: 3, Demon: 1 },
-  14: { Townsfolk: 9, Outsider: 1, Minion: 3, Demon: 1 },
-  15: { Townsfolk: 9, Outsider: 2, Minion: 3, Demon: 1 }
+  5:  { townsfolk: 3, outsiders: 0, minions: 1, demons: 1 },
+  6:  { townsfolk: 3, outsiders: 1, minions: 1, demons: 1 },
+  7:  { townsfolk: 5, outsiders: 0, minions: 1, demons: 1 },
+  8:  { townsfolk: 5, outsiders: 1, minions: 1, demons: 1 },
+  9:  { townsfolk: 5, outsiders: 2, minions: 1, demons: 1 },
+  10: { townsfolk: 7, outsiders: 0, minions: 2, demons: 1 },
+  11: { townsfolk: 7, outsiders: 1, minions: 2, demons: 1 },
+  12: { townsfolk: 7, outsiders: 2, minions: 2, demons: 1 },
+  13: { townsfolk: 9, outsiders: 0, minions: 3, demons: 1 },
+  14: { townsfolk: 9, outsiders: 1, minions: 3, demons: 1 },
+  15: { townsfolk: 9, outsiders: 2, minions: 3, demons: 1 }
 };
-
-function cloneDefaults(): GameSettings {
-  return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-}
-
-function getRoleType(
-  roleName: string,
-  script: ScriptDefinition
-): RoleType | null {
-  for (const type of Object.keys(script.roles) as RoleType[]) {
-    if (script.roles[type].includes(roleName)) {
-      return type;
-    }
-  }
-
-  return null;
-}
 
 function validateScript(
   settings: GameSettings,
@@ -249,151 +148,135 @@ function validateScript(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const roleCounts = {
-    Townsfolk: 0,
-    Outsider: 0,
-    Minion: 0,
-    Demon: 0
-  };
+  const script = String(settings.script || "");
+  const playerLimit = Number(settings.playerLimit) || 15;
 
-  const scriptId = String(settings.script || "");
-  const script = SCRIPTS[scriptId];
-
-  if (!script && scriptId !== "custom") {
-    errors.push("The selected script does not exist.");
+  if (playerLimit < 5 || playerLimit > 15) {
+    errors.push("Maximum player count must be between 5 and 15.");
   }
 
-  const playerLimit = Number(settings.playerLimit);
-
-  if (
-    !Number.isInteger(playerLimit) ||
-    playerLimit < 5 ||
-    playerLimit > 15
-  ) {
-    errors.push("Player limit must be a whole number between 5 and 15.");
-  }
-
-  const selected = settings.selectedCharacters;
-
-  if (!Array.isArray(selected)) {
-    errors.push("Character selection must be a list.");
-    return { valid: false, errors, warnings, roleCounts };
-  }
-
-  const selectedCharacters = selected.map(String);
-
-  if (new Set(selectedCharacters).size !== selectedCharacters.length) {
-    errors.push("The character selection contains duplicates.");
-  }
-
-  let availableRoles: Record<RoleType, string[]> = {
-    Townsfolk: [],
-    Outsider: [],
-    Minion: [],
-    Demon: []
-  };
-
-  if (script) {
-    availableRoles = script.roles;
-  } else if (scriptId === "custom") {
-    if (selectedCharacters.length === 0) {
-      errors.push("A custom script needs at least one selected character.");
-    }
-
-    for (const roleName of selectedCharacters) {
-      let found = false;
-
-      for (const definition of Object.values(SCRIPTS)) {
-        const roleType = getRoleType(roleName, definition);
-
-        if (roleType) {
-          availableRoles[roleType].push(roleName);
-          found = true;
-          break;
-        }
-      }
-
-      if (!found) {
-        errors.push(`Unknown character: ${roleName}`);
-      }
-    }
-  }
-
-  const rolePool = selectedCharacters.length > 0
-    ? selectedCharacters
-    : Object.values(availableRoles).flat();
-
-  for (const roleName of rolePool) {
-    const roleType = getRoleType(roleName, {
-      name: "validation",
-      roles: availableRoles
-    });
-
-    if (!roleType) {
-      errors.push(`Character "${roleName}" is not part of the selected script.`);
-      continue;
-    }
-
-    roleCounts[roleType]++;
-  }
-
-  if (roleCounts.Townsfolk < 1) {
-    errors.push("The script needs at least one Townsfolk character.");
-  }
-
-  if (roleCounts.Minion < 1) {
-    errors.push("The script needs at least one Minion character.");
-  }
-
-  if (roleCounts.Demon < 1) {
-    errors.push("The script needs at least one Demon character.");
-  }
-
-  if (Number.isInteger(playerLimit) && PLAYER_COUNTS[playerLimit]) {
-    const required = PLAYER_COUNTS[playerLimit];
-
-    for (const type of Object.keys(required) as RoleType[]) {
-      if (roleCounts[type] < required[type]) {
-        errors.push(
-          `Not enough ${type} characters for ${playerLimit} players. ` +
-          `Required: ${required[type]}; available: ${roleCounts[type]}.`
-        );
-      }
-    }
-  }
+  const playerCount = Math.max(
+    5,
+    Math.min(15, actualPlayerCount || 5)
+  );
 
   if (actualPlayerCount < 5) {
     warnings.push(
-      "The lobby currently has fewer than 5 players. " +
-      "The script is being checked against the configured player limit."
+      "Fewer than 5 players are currently in the lobby. Validation is using the 5-player role distribution."
     );
   }
 
-  if (actualPlayerCount > playerLimit) {
-    errors.push("The current lobby has more players than the configured limit.");
+  const requiredCounts = PLAYER_COUNTS[playerCount];
+
+  const selected = Array.isArray(settings.selectedCharacters)
+    ? settings.selectedCharacters.map(String)
+    : [];
+
+  let rolePool: string[] = [];
+
+  if (script === "custom") {
+    if (!selected.length) {
+      errors.push(
+        "A custom script needs characters selected before it can be verified."
+      );
+    }
+    rolePool = selected;
+  } else {
+    const builtIn = SCRIPT_ROLES[script];
+
+    if (!builtIn) {
+      errors.push("The selected script is not recognized.");
+    } else {
+      const allRoles = Object.values(builtIn).flat();
+      rolePool = selected.length ? selected : allRoles;
+
+      if (selected.length) {
+        const invalid = selected.filter(
+          role => !allRoles.includes(role)
+        );
+
+        if (invalid.length) {
+          errors.push(
+            "These characters do not belong to the selected script: " +
+            invalid.join(", ")
+          );
+        }
+      }
+    }
   }
 
-  if (scriptId === "custom" && !String(settings.customScriptName || "").trim()) {
-    warnings.push("Consider giving your custom script a name.");
+  const normalized = rolePool.map(role => role.toLowerCase());
+  const duplicates = normalized.filter(
+    (role, index) => normalized.indexOf(role) !== index
+  );
+
+  if (duplicates.length) {
+    errors.push(
+      "Duplicate character selections: " +
+      [...new Set(duplicates)].join(", ")
+    );
   }
 
-  if (settings.includeExperimental) {
+  const counts = {
+    townsfolk: 0,
+    outsiders: 0,
+    minions: 0,
+    demons: 0
+  };
+
+  const unknownRoles: string[] = [];
+
+  for (const role of rolePool) {
+    const type = ROLE_TYPES[role.toLowerCase()];
+
+    if (!type) {
+      unknownRoles.push(role);
+      continue;
+    }
+
+    if (type in counts) {
+      counts[type as keyof typeof counts]++;
+    }
+  }
+
+  if (unknownRoles.length) {
     warnings.push(
-      "Experimental characters are not included in the built-in character database."
+      "These characters have no built-in role category for validation: " +
+      [...new Set(unknownRoles)].join(", ")
     );
+  }
+
+  for (const type of Object.keys(requiredCounts) as Array<
+    keyof typeof requiredCounts
+  >) {
+    if (counts[type] < requiredCounts[type]) {
+      errors.push(
+        `Not enough ${type}: need ${requiredCounts[type]}, but only have ${counts[type]}.`
+      );
+    }
   }
 
   if (settings.includeTravellers) {
     warnings.push(
-      "Traveller support is not yet implemented in the game engine."
+      "Travellers are not included in the standard player role distribution check."
     );
+  }
+
+  if (settings.includeExperimental) {
+    warnings.push(
+      "Experimental characters may need additional manual rules verification."
+    );
+  }
+
+  if (script === "custom" && !String(settings.customScriptName || "").trim()) {
+    warnings.push("Consider giving your custom script a name.");
   }
 
   return {
     valid: errors.length === 0,
     errors,
     warnings,
-    roleCounts
+    playerCount
   };
 }
 
@@ -417,8 +300,7 @@ export class GameRoom extends DurableObject<Env> {
     phase: "Lobby",
     tellerId: null,
     tellerName: null,
-    settings: cloneDefaults(),
-    kickedPlayers: []
+    settings: DEFAULT_SETTINGS
   };
 
   private initialized: Promise<void>;
@@ -429,16 +311,14 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   private async loadState() {
-    const saved = await this.ctx.storage.get<Partial<LobbyState>>("game");
+    const saved = await this.ctx.storage.get<LobbyState>("game");
 
     if (saved) {
       this.state = {
         ...this.state,
         ...saved,
-        players: saved.players || [],
-        kickedPlayers: saved.kickedPlayers || [],
         settings: {
-          ...cloneDefaults(),
+          ...DEFAULT_SETTINGS,
           ...(saved.settings || {})
         }
       };
@@ -501,23 +381,12 @@ export class GameRoom extends DurableObject<Env> {
       const id = String(data.id || "");
       const name = String(data.name || "").trim().slice(0, 20);
 
-      if (!id) {
-        return this.sendError(socket, "Missing player identity.");
-      }
-
       if (data.type === "join") {
-        if (!name) {
+        if (!id || !name) {
           return this.sendError(socket, "Enter a valid player name.");
         }
 
-        if (this.state.kickedPlayers.includes(id)) {
-          return this.sendError(
-            socket,
-            "You have been removed from this game."
-          );
-        }
-
-        if (this.state.tellerId === id) {
+        if (id === this.state.tellerId) {
           return this.sendError(
             socket,
             "The Game Teller cannot also join as a player."
@@ -553,18 +422,24 @@ export class GameRoom extends DurableObject<Env> {
       }
 
       if (data.type === "claimTeller") {
-        if (!name) {
-          return this.sendError(socket, "Enter a valid Game Teller name.");
+        if (!id || !name) {
+          return this.sendError(
+            socket,
+            "Enter a valid Game Teller name."
+          );
         }
 
         if (this.state.players.some(player => player.id === id)) {
           return this.sendError(
             socket,
-            "Leave the player list before becoming Game Teller."
+            "You have already joined as a player."
           );
         }
 
-        if (this.state.tellerId && this.state.tellerId !== id) {
+        if (
+          this.state.tellerId &&
+          this.state.tellerId !== id
+        ) {
           return this.sendError(
             socket,
             "A Game Teller has already been selected."
@@ -580,7 +455,7 @@ export class GameRoom extends DurableObject<Env> {
       }
 
       if (data.type === "saveSettings") {
-        if (!this.isTeller(id)) {
+        if (!id || id !== this.state.tellerId) {
           return this.sendError(
             socket,
             "Only the selected Game Teller can change settings."
@@ -601,29 +476,10 @@ export class GameRoom extends DurableObject<Env> {
           return this.sendError(socket, "Settings are too large.");
         }
 
-        const proposedSettings = {
-          ...this.state.settings,
+        this.state.settings = {
+          ...DEFAULT_SETTINGS,
           ...data.settings
         };
-
-        const validation = validateScript(
-          proposedSettings,
-          this.state.players.length
-        );
-
-        if (!validation.valid) {
-          socket.send(JSON.stringify({
-            type: "validation",
-            result: validation
-          }));
-
-          return this.sendError(
-            socket,
-            "Settings were not saved. Fix the script validation errors first."
-          );
-        }
-
-        this.state.settings = proposedSettings;
 
         await this.saveState();
         this.broadcastState();
@@ -631,20 +487,29 @@ export class GameRoom extends DurableObject<Env> {
         socket.send(JSON.stringify({
           type: "saved"
         }));
-
         return;
       }
 
       if (data.type === "verifyScript") {
-        if (!this.isTeller(id)) {
+        if (!id || id !== this.state.tellerId) {
           return this.sendError(
             socket,
-            "Only the Game Teller can verify the script."
+            "Only the selected Game Teller can verify the script."
           );
         }
 
+        const proposedSettings =
+          data.settings &&
+          typeof data.settings === "object" &&
+          !Array.isArray(data.settings)
+            ? {
+                ...DEFAULT_SETTINGS,
+                ...data.settings
+              }
+            : this.state.settings;
+
         const result = validateScript(
-          this.state.settings,
+          proposedSettings,
           this.state.players.length
         );
 
@@ -652,15 +517,14 @@ export class GameRoom extends DurableObject<Env> {
           type: "validation",
           result
         }));
-
         return;
       }
 
       if (data.type === "kickPlayer") {
-        if (!this.isTeller(id)) {
+        if (!id || id !== this.state.tellerId) {
           return this.sendError(
             socket,
-            "Only the Game Teller can remove players."
+            "Only the selected Game Teller can remove players."
           );
         }
 
@@ -675,35 +539,29 @@ export class GameRoom extends DurableObject<Env> {
         );
 
         if (!target) {
-          return this.sendError(socket, "That player is not in the lobby.");
+          return this.sendError(
+            socket,
+            "That player is no longer in the lobby."
+          );
         }
 
         this.state.players = this.state.players.filter(
           player => player.id !== targetId
         );
 
-        if (!this.state.kickedPlayers.includes(targetId)) {
-          this.state.kickedPlayers.push(targetId);
-        }
-
         await this.saveState();
         this.broadcastState();
 
         socket.send(JSON.stringify({
-          type: "playerKicked",
-          playerName: target.name
+          type: "saved",
+          message: `${target.name} was removed from the lobby.`
         }));
-
         return;
       }
 
     } catch {
       this.sendError(socket, "Invalid request.");
     }
-  }
-
-  private isTeller(id: string): boolean {
-    return Boolean(id && id === this.state.tellerId);
   }
 
   private sendError(socket: WebSocket, message: string) {
