@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,20 +13,22 @@ h1{text-align:center;font-size:27px;margin:18px 0 5px}
 .subtitle{text-align:center;color:#aaa;margin:0 0 26px}
 .panel{background:#242424;border:1px solid #393939;border-radius:12px;padding:18px;margin-bottom:15px}
 h2{font-size:19px;margin:0 0 14px}
-h3{font-size:16px;margin:22px 0 10px;color:#e8c5a0}
+h3{font-size:16px;margin:20px 0 10px;color:#e8c5a0}
 label{display:block;font-size:14px;font-weight:bold;margin:12px 0 6px}
-input,select,button{width:100%;min-height:44px;border-radius:8px;font-size:15px}
-input,select{background:#171717;color:white;border:1px solid #555;padding:10px}
-button{border:0;background:#a33b3b;color:white;font-weight:bold;padding:10px;cursor:pointer}
+input,select,button,textarea{width:100%;min-height:44px;border-radius:8px;font-size:15px;font-family:inherit}
+input,select,textarea{background:#171717;color:#fff;border:1px solid #555;padding:10px}
+button{border:0;background:#a33b3b;color:#fff;font-weight:bold;padding:10px;cursor:pointer}
 button.secondary{background:#444}
 button.danger{background:#743333}
 button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid #e8c5a0;outline-offset:2px}
 .status{text-align:center;color:#aaa;font-size:13px;margin:10px 0 0}
 .connected{color:#8bd49a}
 .player{display:flex;align-items:center;gap:12px;background:#303030;border-radius:8px;padding:11px;margin-top:8px}
 .player-name{flex:1;min-width:0;overflow-wrap:anywhere}
 .player button{width:auto;min-width:72px;min-height:34px;padding:7px 12px;font-size:13px}
 .seat{width:30px;height:30px;border-radius:50%;background:#a33b3b;display:grid;place-items:center;flex-shrink:0}
+.dead .seat{background:#555}.dead .player-name{color:#999;text-decoration:line-through}
 .hidden{display:none!important}
 .muted{color:#aaa;font-size:13px;line-height:1.45}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
@@ -35,7 +36,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .tabs button{white-space:nowrap;width:auto;min-height:38px;padding:8px 13px;background:#393939}
 .tabs button.active{background:#a33b3b}
 .setting-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.field{min-width:0}
 .check{display:flex;align-items:center;gap:10px;background:#303030;padding:11px;border-radius:8px;margin:7px 0;font-weight:normal}
 .check input{width:20px;min-height:20px;accent-color:#a33b3b}
 .character-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
@@ -44,19 +44,17 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .small{font-size:12px;color:#aaa}
 .notice{border-left:3px solid #b98b54;padding:9px 12px;background:#302a23;color:#e6d6c5;font-size:13px;line-height:1.45;margin:12px 0}
 .validation{padding:12px;border-radius:8px;background:#303030;margin-top:12px;font-size:13px;line-height:1.5}
-.validation.error{border-left:3px solid #d45b5b}
-.validation.success{border-left:3px solid #65b77a}
-.validation.warning{border-left:3px solid #d2a45b}
+.validation.error{border-left:3px solid #d45b5b}.validation.success{border-left:3px solid #65b77a}.validation.warning{border-left:3px solid #d2a45b}
 .validation ul{padding-left:20px;margin:8px 0}
 .qr-layout{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.qr-layout img{width:160px;height:160px;background:white;padding:8px;border-radius:8px}
+.qr-layout img{width:160px;height:160px;background:#fff;padding:8px;border-radius:8px}
 .link-box{overflow-wrap:anywhere;background:#171717;padding:10px;border-radius:8px;font-size:13px;color:#ddd;margin:8px 0}
-@media(max-width:480px){
-.setting-grid,.character-list{grid-template-columns:1fr}
-body{padding:14px 11px}
-.panel{padding:15px}
-.qr-layout{justify-content:center}
-}
+.log p{margin:4px 0;font-size:14px}
+.banner{background:#303a2c;border-left:3px solid #65b77a;padding:12px;border-radius:8px;font-weight:bold;margin-bottom:12px}
+.rev{border:2px solid #a33b3b}
+.rev li{margin:5px 0;font-size:14px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+@media(max-width:480px){.setting-grid,.character-list,.row3{grid-template-columns:1fr}body{padding:14px 11px}.qr-layout{justify-content:center}}
 </style>
 </head>
 <body>
@@ -78,7 +76,6 @@ body{padding:14px 11px}
 
 <section id="sharePanel" class="panel">
   <h2>Invite players</h2>
-  <p class="muted">Share this link or let players scan the QR code to open the game.</p>
   <div class="qr-layout">
     <img id="qrImage" alt="QR code for joining this game">
     <div style="flex:1;min-width:180px">
@@ -96,558 +93,200 @@ body{padding:14px 11px}
   <p id="tellerDisplay" class="muted">No Game Teller selected.</p>
 </section>
 
+<section id="game" class="panel hidden">
+  <h2 id="phase"></h2>
+  <div id="winner" class="banner hidden"></div>
+  <div id="meBox" class="hidden">
+    <div class="actions">
+      <button id="revealBtn">Reveal Role</button>
+      <button id="safeBtn" class="secondary">Screen-safe: off</button>
+    </div>
+  </div>
+  <div id="act"></div>
+  <h3>Announcements</h3>
+  <div id="log" class="log"></div>
+</section>
+
+<section id="rev" class="panel rev hidden" aria-live="polite">
+  <h2 id="revRole"></h2>
+  <p id="revAlign" class="muted"></p>
+  <p id="revAbility"></p>
+  <h3>Your history</h3>
+  <ul id="revHist"></ul>
+  <button id="revClose" class="secondary">Close</button>
+</section>
+
 <section id="tellerPanel" class="panel hidden">
   <h2>Game Teller Control Room</h2>
-  <p class="muted">Configure and verify the game before starting.</p>
-  <div class="notice">Script verification and player removal are available here. Full role assignment, night actions, private character information, voting, and game progression still require their own game systems.</div>
-
-  <div class="tabs" id="tabs">
-    <button class="active" data-tab="characters">Characters</button>
-    <button data-tab="timing">Timing</button>
-    <button data-tab="voting">Voting</button>
-    <button data-tab="rules">Game rules</button>
-    <button data-tab="automation">Automation</button>
-    <button data-tab="privacy">Privacy</button>
+  <div class="notice">The engine handles roles, evil team info, night choices, nominations, ghost votes, executions, Scarlet Woman succession, Saint, and win checks. You resolve every ability (poison, protection, Drunk/Recluse/Spy, Virgin, Slayer, Mayor, Imp kills) by sending info and recording deaths below.</div>
+  <div id="tctl">
+    <div class="actions">
+      <button id="startGame">Start Game</button>
+      <button id="reset" class="danger">Reset to Lobby</button>
+      <button id="startDay" class="secondary">Start Day</button>
+      <button id="startNight" class="secondary">Start Night</button>
+      <button id="closeVote" class="secondary">Close Vote</button>
+      <button id="execute" class="secondary">Execute Block</button>
+    </div>
+    <div id="tTable"></div>
+    <h3>Act on a player</h3>
+    <select id="tPlayer" aria-label="Player"></select>
+    <textarea id="tText" rows="2" maxlength="300" placeholder="Private information to send to this player"></textarea>
+    <div class="row3">
+      <button id="sendInfo">Send Info</button>
+      <button id="killBtn" class="danger">Record Death</button>
+      <button id="assignBtn" class="secondary">Set Character</button>
+    </div>
+    <select id="tRole" aria-label="Character"></select>
   </div>
 
+  <h3>Settings</h3>
+  <div class="notice">Active settings: script, character pool, max players, self/repeat nominations, nominations per day, dead-player ghost vote, late join. Others are saved preferences only.</div>
+  <div class="tabs" id="tabs"></div>
   <form id="settingsForm">
-  <div class="tabpage" data-page="characters">
-    <h3>Script and character pool</h3>
-    <label for="script">Script</label>
-    <select id="script" name="script">
-      <option value="trouble-brewing">Trouble Brewing</option>
-      <option value="bad-moon-rising">Bad Moon Rising</option>
-      <option value="sects-and-violets">Sects &amp; Violets</option>
-      <option value="custom">Custom script</option>
-    </select>
-
-    <label for="customScriptName">Custom script name</label>
-    <input id="customScriptName" name="customScriptName" placeholder="Optional script name">
-
-    <div class="setting-grid">
-      <div class="field">
-        <label for="playerLimit">Maximum players (5–15)</label>
-        <input id="playerLimit" name="playerLimit" type="number" min="5" max="15">
-      </div>
-      <div class="field">
-        <label for="roleAssignment">Role assignment</label>
-        <select id="roleAssignment" name="roleAssignment">
-          <option value="random">Random</option>
-          <option value="manual">Manual by Game Teller</option>
-        </select>
-      </div>
-    </div>
-
-    <label class="check"><input type="checkbox" name="includeTravellers"> Include Travellers</label>
-    <label class="check"><input type="checkbox" name="includeFabled"> Include Fabled</label>
-    <label class="check"><input type="checkbox" name="includeExperimental"> Include experimental characters</label>
-
-    <h3>Optional character selection</h3>
-    <p class="muted">Choose characters to include in the selected script.</p>
-    <div id="characterList" class="character-list"></div>
-
-    <h3>Script verification</h3>
-    <p class="muted">Check the selected script for missing roles, invalid selections, and configuration problems.</p>
-    <button type="button" id="verifyScript">Verify Script</button>
-    <div id="validationResults" class="hidden" aria-live="polite"></div>
-  </div>
-
-  <div class="tabpage hidden" data-page="timing">
-    <h3>Round durations</h3>
-    <div class="setting-grid">
-      <div><label>First night (minutes)</label><input name="firstNightMinutes" type="number" min="1" max="60"></div>
-      <div><label>Other nights (minutes)</label><input name="otherNightMinutes" type="number" min="1" max="60"></div>
-      <div><label>Day discussion (minutes)</label><input name="dayDiscussionMinutes" type="number" min="1" max="120"></div>
-      <div><label>Nomination period (minutes)</label><input name="nominationMinutes" type="number" min="1" max="60"></div>
-      <div><label>Voting window (seconds)</label><input name="votingSeconds" type="number" min="5" max="300"></div>
-      <div><label>Execution resolution (minutes)</label><input name="executionMinutes" type="number" min="0" max="30"></div>
-    </div>
-    <label class="check"><input type="checkbox" name="showTimers"> Show countdown timers</label>
-    <label class="check"><input type="checkbox" name="announcePhaseChanges"> Announce phase changes</label>
-  </div>
-
-  <div class="tabpage hidden" data-page="voting">
-    <h3>Nominations and voting</h3>
-    <div class="setting-grid">
-      <div>
-        <label>Nominations per day (0 = unlimited)</label>
-        <input name="nominationsPerDay" type="number" min="0" max="15">
-      </div>
-      <div>
-        <label>Tie handling</label>
-        <select name="tieHandling">
-          <option value="no-execution">No execution</option>
-          <option value="tied-execution">Allow tied execution</option>
-          <option value="teller-choice">Game Teller decides</option>
-        </select>
-      </div>
-    </div>
-    <label class="check"><input type="checkbox" name="allowSelfNomination"> Allow self-nomination</label>
-    <label class="check"><input type="checkbox" name="allowRepeatNominations"> Allow repeat nominations</label>
-    <label class="check"><input type="checkbox" name="allowDeadPlayersToSpeak"> Dead players may speak</label>
-    <label class="check"><input type="checkbox" name="deadPlayersKeepVote"> Dead players retain their unused vote</label>
-  </div>
-
-  <div class="tabpage hidden" data-page="rules">
-    <h3>Game rules and intervention</h3>
-    <label class="check"><input type="checkbox" name="allowRoleChanges"> Allow character changes</label>
-    <label class="check"><input type="checkbox" name="allowResurrection"> Allow resurrection</label>
-    <label class="check"><input type="checkbox" name="allowManualDeaths"> Allow manual death adjustments</label>
-    <label class="check"><input type="checkbox" name="allowManualInformation"> Allow information overrides</label>
-    <label class="check"><input type="checkbox" name="revealExecutedRole"> Reveal executed character</label>
-    <label class="check"><input type="checkbox" name="revealDeathCause"> Reveal cause of death</label>
-    <label class="check"><input type="checkbox" name="storytellerCanOverride"> Game Teller can intervene in unusual situations</label>
-  </div>
-
-  <div class="tabpage hidden" data-page="automation">
-    <h3>Automated game progression</h3>
-    <label class="check"><input type="checkbox" name="automaticPhaseProgression"> Automatically advance between phases</label>
-    <label class="check"><input type="checkbox" name="automaticVoting"> Automatically tally votes</label>
-    <label class="check"><input type="checkbox" name="automaticExecution"> Automatically resolve executions</label>
-    <label class="check"><input type="checkbox" name="automaticVictoryCheck"> Automatically check victory conditions</label>
-    <label class="check"><input type="checkbox" name="pauseForUnsupportedAbilities"> Pause for Game Teller when an ability is unsupported or needs judgment</label>
-    <div class="notice">These are saved preferences. They only take effect when the corresponding game systems are implemented.</div>
-  </div>
-
-  <div class="tabpage hidden" data-page="privacy">
-    <h3>Game access and player tools</h3>
-    <label for="gameVisibility">Game visibility</label>
-    <select name="gameVisibility" id="gameVisibility">
-      <option value="unlisted">Unlisted (link required)</option>
-      <option value="private">Private</option>
-      <option value="public">Public</option>
-    </select>
-    <label class="check"><input type="checkbox" name="allowLateJoin"> Allow late joining</label>
-    <label class="check"><input type="checkbox" name="enableScreenSafeMode"> Enable screen-safe mode</label>
-    <label class="check"><input type="checkbox" name="enableSuspicionTokens"> Enable private suspicion tokens</label>
-    <label class="check"><input type="checkbox" name="enablePersonalNotes"> Enable private player notes</label>
-    <label class="check"><input type="checkbox" name="clearPrivateNotesAtEnd"> Clear private notes when the game ends</label>
-    <label class="check"><input type="checkbox" name="retainGameHistory"> Keep game event history</label>
-    <label class="check"><input type="checkbox" name="confirmDestructiveActions"> Require confirmation for reset/restart actions</label>
-    <div class="setting-grid">
-      <div>
-        <label>Reconnect grace period (minutes)</label>
-        <input name="reconnectGraceMinutes" type="number" min="0" max="60">
-      </div>
-    </div>
-  </div>
-
-  <div class="savebar">
-    <button type="submit" id="saveSettings">Save Game Settings</button>
-    <p class="small" id="saveStatus">Settings have not been changed.</p>
-  </div>
+    <div id="pages"></div>
+    <div id="characterWrap"><h3>Character pool</h3><div id="characterList" class="character-list"></div>
+      <button type="button" id="verifyScript">Verify Script</button>
+      <div id="validationResults" class="hidden" aria-live="polite"></div></div>
+    <div class="savebar"><button type="submit">Save Game Settings</button><p class="small" id="saveStatus">Settings have not been changed.</p></div>
   </form>
 </section>
 </main>
 
 <script>
-const $ = id => document.getElementById(id);
-const statusEl = $("status");
-const clientIdKey = "clocktower-player-id";
+const $=i=>document.getElementById(i);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let cid=localStorage.getItem("clocktower-player-id");
+if(!cid){cid=crypto.randomUUID();localStorage.setItem("clocktower-player-id",cid)}
+let ws,V=null,formInit=false,safe=localStorage.getItem("clocktower-safe")==="1",revTimer,actSig="";
 
-let clientId = localStorage.getItem(clientIdKey);
-if (!clientId) {
-  clientId = crypto.randomUUID();
-  localStorage.setItem(clientIdKey, clientId);
+const ROLES="Washerwoman,Librarian,Investigator,Chef,Empath,Fortune Teller,Undertaker,Monk,Ravenkeeper,Virgin,Slayer,Soldier,Mayor,Butler,Drunk,Recluse,Saint,Poisoner,Spy,Scarlet Woman,Baron,Imp,Grandmother,Sailor,Chambermaid,Exorcist,Innkeeper,Gambler,Gossip,Courtier,Professor,Minstrel,Tea Lady,Pacifist,Fool,Tinker,Moonchild,Goon,Lunatic,Godfather,Devil's Advocate,Assassin,Mastermind,Zombuul,Pukka,Shabaloth,Po,Snake Charmer,Flowergirl,Town Crier,Oracle,Savant,Seamstress,Philosopher,Artist,Juggler,Sage,Clockmaker,Dreamer,Mathematician,Mutant,Sweetheart,Barber,Klutz,Evil Twin,Witch,Cerenovus,Pit-Hag,Fang Gu,Vigormortis,No Dashii,Vortox".split(",");
+const TABS={
+characters:[["script","Script","s:trouble-brewing|bad-moon-rising|sects-and-violets|custom"],["customScriptName","Custom script name","t"],["playerLimit","Maximum players (5–15)","n"],["roleAssignment","Role assignment","s:random|manual"],["includeTravellers","Include Travellers","c"],["includeFabled","Include Fabled","c"],["includeExperimental","Include experimental characters","c"]],
+timing:[["firstNightMinutes","First night (minutes)","n"],["otherNightMinutes","Other nights (minutes)","n"],["dayDiscussionMinutes","Day discussion (minutes)","n"],["nominationMinutes","Nomination period (minutes)","n"],["votingSeconds","Voting window (seconds)","n"],["executionMinutes","Execution resolution (minutes)","n"],["showTimers","Show countdown timers","c"],["announcePhaseChanges","Announce phase changes","c"]],
+voting:[["nominationsPerDay","Nominations per day (0 = unlimited)","n"],["tieHandling","Tie handling","s:no-execution|tied-execution|teller-choice"],["allowSelfNomination","Allow self-nomination","c"],["allowRepeatNominations","Allow repeat nominations","c"],["allowDeadPlayersToSpeak","Dead players may speak","c"],["deadPlayersKeepVote","Dead players keep one ghost vote","c"]],
+rules:[["allowRoleChanges","Allow character changes","c"],["allowResurrection","Allow resurrection","c"],["allowManualDeaths","Allow manual death adjustments","c"],["allowManualInformation","Allow information overrides","c"],["revealExecutedRole","Reveal executed character","c"],["revealDeathCause","Reveal cause of death","c"],["storytellerCanOverride","Game Teller can intervene","c"]],
+automation:[["automaticPhaseProgression","Automatically advance phases","c"],["automaticVoting","Automatically tally votes","c"],["automaticExecution","Automatically resolve executions","c"],["automaticVictoryCheck","Automatically check victory","c"],["pauseForUnsupportedAbilities","Pause for Game Teller on unsupported abilities","c"]],
+privacy:[["gameVisibility","Game visibility","s:unlisted|private|public"],["allowLateJoin","Allow late joining","c"],["enableScreenSafeMode","Enable screen-safe mode","c"],["enableSuspicionTokens","Private suspicion tokens","c"],["enablePersonalNotes","Private player notes","c"],["clearPrivateNotesAtEnd","Clear private notes at end","c"],["retainGameHistory","Keep game event history","c"],["confirmDestructiveActions","Confirm reset/restart","c"],["reconnectGraceMinutes","Reconnect grace (minutes)","n"]]};
+const fld=([k,l,t])=>t==="c"?`<label class="check"><input type="checkbox" name="${k}"> ${l}</label>`:t[0]==="s"?`<label>${l}</label><select name="${k}">${t.slice(2).split("|").map(o=>`<option>${o}</option>`).join("")}</select>`:`<label>${l}</label><input name="${k}" type="${t==="n"?"number":"text"}">`;
+$("tabs").innerHTML=Object.keys(TABS).map((k,i)=>`<button type="button" class="${i?"":"active"}" data-tab="${k}">${k[0].toUpperCase()+k.slice(1)}</button>`).join("");
+$("pages").innerHTML=Object.entries(TABS).map(([k,f],i)=>`<div class="tabpage ${i?"hidden":""}" data-page="${k}">${f.map(fld).join("")}</div>`).join("");
+$("characterList").innerHTML=ROLES.map(r=>`<label class="check"><input type="checkbox" data-character="1" value="${esc(r)}"><span>${esc(r)}</span></label>`).join("");
+$("tRole").innerHTML=ROLES.map(r=>`<option>${esc(r)}</option>`).join("");
+$("tabs").onclick=e=>{const b=e.target.closest("button[data-tab]");if(!b)return;
+ document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("active",x===b));
+ document.querySelectorAll(".tabpage").forEach(p=>p.classList.toggle("hidden",p.dataset.page!==b.dataset.tab));
+ $("characterWrap").classList.toggle("hidden",b.dataset.tab!=="characters")};
+$("characterWrap").classList.remove("hidden");
+
+function setStatus(t,ok){$("status").textContent=t;$("status").classList.toggle("connected",!!ok)}
+function connect(){
+ ws=new WebSocket((location.protocol==="https:"?"wss:":"ws:")+"//"+location.host+"/api/ws");
+ ws.onopen=()=>{setStatus("Connected to game",true);ws.send(JSON.stringify({type:"hello",id:cid}))};
+ ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}
+  if(m.type==="state"){V=m;render()}
+  if(m.type==="error"){setStatus(m.message);$("saveStatus").textContent=m.message}
+  if(m.type==="saved"){$("saveStatus").textContent="Settings saved."}
+  if(m.type==="validation")showValidation(m.result)};
+ ws.onclose=()=>{setStatus("Disconnected. Reconnecting...");setTimeout(connect,2000)};
+}
+function send(d){if(!ws||ws.readyState!==1)return setStatus("Not connected yet.");ws.send(JSON.stringify({...d,id:cid}))}
+
+function render(){
+ const p=V.pub,me=V.me,pl=p.players,T=V.isTeller,live=p.phase==="Night"||p.phase==="Day";
+ $("count").textContent=pl.length+" / "+(p.settings.playerLimit||15);
+ $("players").innerHTML=pl.length?pl.map((x,i)=>`<div class="player ${x.alive?"":"dead"}"><span class="seat">${i+1}</span><span class="player-name">${esc(x.name)}${x.alive?"":x.ghost?" (ghost vote used)":" (dead, ghost vote left)"}</span>${T&&p.phase==="Lobby"?`<button type="button" class="danger" data-kick="${x.pid}">Kick</button>`:""}</div>`).join(""):'<p class="muted">Waiting for players...</p>';
+ $("tellerDisplay").textContent=p.tellerName?"Game Teller: "+p.tellerName:"No Game Teller selected.";
+ $("entry").classList.toggle("hidden",!!me||T);
+ $("game").classList.toggle("hidden",p.phase==="Lobby");
+ $("phase").textContent=p.phase==="Ended"?"Game over":p.phase+" "+p.day;
+ $("winner").classList.toggle("hidden",!p.winner);$("winner").textContent=p.winner?p.winner+" wins!":"";
+ $("log").innerHTML=p.log.slice().reverse().map(l=>`<p>${esc(l)}</p>`).join("")||'<p class="muted">Nothing yet.</p>';
+ $("meBox").classList.toggle("hidden",!(me&&me.role));
+ $("safeBtn").textContent="Screen-safe: "+(safe?"on":"off");
+ if(!(me&&me.role))closeRev();else if(!$("rev").classList.contains("hidden"))fillRev();
+ renderAct();
+ $("tellerPanel").classList.toggle("hidden",!T);
+ if(T){
+  const t=V.teller.players,sel=$("tPlayer").value;
+  $("tPlayer").innerHTML=t.map(x=>`<option value="${x.pid}">${esc(x.name)}${x.alive?"":" (dead)"}</option>`).join("");
+  if(t.some(x=>x.pid===sel))$("tPlayer").value=sel;
+  $("tTable").innerHTML=t.map((x,i)=>`<div class="player ${x.alive?"":"dead"}"><span class="seat">${i+1}</span><span class="player-name">${esc(x.name)}: <strong>${esc(x.role||"no role")}</strong>${x.shown?" (thinks "+esc(x.shown)+")":""}${x.evil?" · evil":""}${x.act.length?"<br><span class='small'>chose "+esc(x.act.join(", "))+"</span>":""}</span></div>`).join("");
+  $("startGame").disabled=!(p.phase==="Lobby"||p.phase==="Ended");
+  $("startDay").disabled=p.phase!=="Night";$("startNight").disabled=p.phase!=="Day";
+  $("closeVote").disabled=!p.nom;$("execute").disabled=!(p.phase==="Day"&&!p.nom&&p.block);
+  $("execute").textContent=p.block?"Execute "+p.block.name+" ("+p.block.yes+" votes)":"Execute Block";
+  if(!formInit){populate(p.settings);formInit=true}
+ }
 }
 
-let socket;
-let connected = false;
-let latestState = null;
-let isTeller = false;
-let formDirty = false;
-let formInitialized = false;
-
-const characters = [
-  "Washerwoman","Librarian","Investigator","Chef","Empath","Fortune Teller",
-  "Undertaker","Monk","Ravenkeeper","Virgin","Slayer","Soldier","Mayor",
-  "Butler","Drunk","Recluse","Saint","Poisoner","Spy","Scarlet Woman",
-  "Baron","Godfather","Devil's Advocate","Assassin","Mastermind","Imp",
-  "Zombuul","Pukka","Shabaloth","Po","Goon","Professor","Grandmother",
-  "Sailor","Chambermaid","Exorcist","Innkeeper","Gambler","Gossip",
-  "Courtier","Tea Lady","Pacifist","Fool","Tinker","Moonchild",
-  "Snake Charmer","Flowergirl","Town Crier","Oracle","Savant","Artist",
-  "Juggler","Philosopher","Mutant","Sweetheart","Evil Twin","Witch",
-  "Cerenovus","Pit-Hag","Vortox","No Dashii","Fang Gu"
-];
-
-const defaultSettings = {
-  script:"trouble-brewing",
-  playerLimit:15,
-  roleAssignment:"random",
-  includeTravellers:false,
-  includeFabled:false,
-  includeExperimental:false,
-  customScriptName:"",
-  selectedCharacters:[],
-  firstNightMinutes:8,
-  otherNightMinutes:6,
-  dayDiscussionMinutes:8,
-  nominationMinutes:5,
-  votingSeconds:30,
-  executionMinutes:2,
-  announcePhaseChanges:true,
-  showTimers:true,
-  allowDeadPlayersToSpeak:true,
-  deadPlayersKeepVote:true,
-  nominationsPerDay:0,
-  tieHandling:"no-execution",
-  allowSelfNomination:false,
-  allowRepeatNominations:false,
-  automaticPhaseProgression:false,
-  automaticVoting:true,
-  automaticExecution:false,
-  automaticVictoryCheck:true,
-  pauseForUnsupportedAbilities:true,
-  storytellerCanOverride:true,
-  allowRoleChanges:true,
-  allowResurrection:true,
-  allowManualDeaths:true,
-  allowManualInformation:true,
-  revealExecutedRole:true,
-  revealDeathCause:false,
-  gameVisibility:"unlisted",
-  allowLateJoin:false,
-  reconnectGraceMinutes:10,
-  retainGameHistory:true,
-  clearPrivateNotesAtEnd:true,
-  enablePersonalNotes:true,
-  enableSuspicionTokens:true,
-  enableScreenSafeMode:true,
-  confirmDestructiveActions:true
-};
-
-function setStatus(text, ok=false) {
-  statusEl.textContent=text;
-  statusEl.classList.toggle("connected",ok);
+function renderAct(){
+ const p=V.pub,me=V.me;let h="";
+ if(me&&me.role&&p.phase!=="Ended"){
+  const others=p.players.filter(x=>x.pid!==me.pid);
+  const opts=(all)=>(all?p.players:others).map(x=>`<option value="${x.pid}">${esc(x.name)}${x.alive?"":" (dead)"}</option>`).join("");
+  if(p.phase==="Night"&&me.acts&&!me.done&&(me.alive||me.role==="Ravenkeeper"))
+   h+=`<h3>Night action</h3>${Array.from({length:me.acts},(_,i)=>`<select class="tg" aria-label="Target ${i+1}">${opts(false)}</select>`).join("")}<button id="actBtn">Submit choice</button>`;
+  else if(p.phase==="Night"&&me.acts&&me.done)h+='<p class="muted">Choice submitted. Wait for the Game Teller.</p>';
+  if(p.phase==="Day"&&me.alive&&!me.nominated&&!p.nom)h+=`<h3>Nominate</h3><select id="nomTo">${opts(V.pub.settings.allowSelfNomination)}</select><button id="nomBtn">Nominate</button>`;
+  if(p.nom)h+=`<h3>Vote</h3><p>${esc(p.nom.by)} nominated ${esc(p.nom.to)}. Votes so far: ${p.nom.votes}</p>`+(me.voted?'<p class="muted">You voted yes.</p>':me.canVote?'<button id="voteBtn">Vote yes</button>':'<p class="muted">You cannot vote.</p>');
+  if(p.block)h+=`<p class="muted">On the block: ${esc(p.block.name)} (${p.block.yes} votes)</p>`;
+ }
+ const sig=h+(me?me.done:"");
+ if(sig===actSig)return;actSig=sig;$("act").innerHTML=h;
+ const g=i=>$(i);
+ if(g("actBtn"))g("actBtn").onclick=()=>send({type:"act",targets:[...document.querySelectorAll(".tg")].map(s=>s.value)});
+ if(g("nomBtn"))g("nomBtn").onclick=()=>send({type:"nominate",pid:g("nomTo").value});
+ if(g("voteBtn"))g("voteBtn").onclick=()=>send({type:"vote"});
 }
 
-function connect() {
-  const scheme=location.protocol==="https:"?"wss:":"ws:";
-  socket=new WebSocket(scheme+"//"+location.host+"/api/ws");
-
-  socket.addEventListener("open",()=>{
-    connected=true;
-    setStatus("Connected to game",true);
-  });
-
-  socket.addEventListener("message",event=>{
-    let msg;
-    try {
-      msg=JSON.parse(event.data);
-    } catch {
-      return;
-    }
-
-    if(msg.type==="state"){
-      latestState=msg.state;
-      renderState();
-    }
-
-    if(msg.type==="error"){
-      setStatus(msg.message);
-      $("saveStatus").textContent=msg.message;
-      $("validationResults").classList.remove("hidden");
-      $("validationResults").className="validation error";
-      $("validationResults").textContent=msg.message;
-    }
-
-    if(msg.type==="saved"){
-      formDirty=false;
-      $("saveStatus").textContent="Settings saved successfully.";
-    }
-
-    if(msg.type==="validation" || msg.type==="validationResult" ||
-       msg.type==="scriptValidation" || msg.type==="verifyResult"){
-      displayValidation(msg.result || msg.validation || msg);
-    }
-  });
-
-  socket.addEventListener("close",()=>{
-    connected=false;
-    setStatus("Disconnected. Reconnecting...");
-    setTimeout(connect,2000);
-  });
-
-  socket.addEventListener("error",()=>{
-    setStatus("Connection problem. Retrying...");
-  });
+function fillRev(){
+ const m=V.me;
+ if(safe){$("revRole").textContent="Screen-safe mode";$("revAlign").textContent="";$("revAbility").textContent="Your role, ability and history are hidden. Turn screen-safe mode off to view them.";$("revHist").innerHTML="";return}
+ $("revRole").textContent=m.role;
+ $("revAlign").textContent="Alignment: "+(m.evil?"Evil":"Good");
+ $("revAbility").textContent=m.ability;
+ $("revHist").innerHTML=m.hist.length?m.hist.map(x=>`<li>${esc(x)}</li>`).join(""):'<li class="muted">Nothing yet.</li>';
 }
+function closeRev(){$("rev").classList.add("hidden");clearTimeout(revTimer)}
+$("revealBtn").onclick=()=>{fillRev();$("rev").classList.remove("hidden");clearTimeout(revTimer);if(safe)revTimer=setTimeout(closeRev,8000)};
+$("revClose").onclick=closeRev;
+$("safeBtn").onclick=()=>{safe=!safe;localStorage.setItem("clocktower-safe",safe?"1":"0");$("safeBtn").textContent="Screen-safe: "+(safe?"on":"off");closeRev()};
+document.addEventListener("visibilitychange",()=>{if(safe)closeRev()});
 
-function send(data) {
-  if(!connected){
-    setStatus("Not connected yet.");
-    return;
-  }
-  socket.send(JSON.stringify({...data,id:clientId}));
+function populate(s){
+ const f=$("settingsForm");
+ for(const[k,v]of Object.entries(s)){const el=f.elements.namedItem(k);if(!el||k==="selectedCharacters")continue;if(el.type==="checkbox")el.checked=!!v;else el.value=v}
+ const sel=new Set(s.selectedCharacters||[]);document.querySelectorAll("[data-character]").forEach(i=>i.checked=sel.has(i.value));
 }
-
-function renderState() {
-  const players=latestState.players||[];
-
-  $("count").textContent=players.length+" / "+(latestState.settings.playerLimit||15);
-  $("players").replaceChildren();
-
-  if(!players.length){
-    const p=document.createElement("p");
-    p.className="muted";
-    p.textContent="Waiting for players...";
-    $("players").append(p);
-  }
-
-  players.forEach((p,i)=>{
-    const row=document.createElement("div");
-    row.className="player";
-
-    const seat=document.createElement("span");
-    seat.className="seat";
-    seat.textContent=i+1;
-
-    const n=document.createElement("span");
-    n.className="player-name";
-    n.textContent=p.name;
-
-    row.append(seat,n);
-
-    if(isTeller){
-      const kick=document.createElement("button");
-      kick.type="button";
-      kick.className="danger";
-      kick.textContent="Kick";
-      kick.addEventListener("click",()=>{
-        if(!confirm("Kick "+p.name+" from this game?"))return;
-        send({type:"kickPlayer",targetId:p.id});
-      });
-      row.append(kick);
-    }
-
-    $("players").append(row);
-  });
-
-  $("tellerDisplay").textContent=latestState.tellerName
-    ?"Game Teller: "+latestState.tellerName
-    :"No Game Teller selected.";
-
-  isTeller=latestState.tellerId===clientId;
-  $("tellerPanel").classList.toggle("hidden",!isTeller);
-
-  // Re-render player controls after the Teller identity is known.
-  if(isTeller){
-    players.forEach((p,i)=>{
-      const row=$("players").children[i];
-      if(row && !row.querySelector("button")){
-        const kick=document.createElement("button");
-        kick.type="button";
-        kick.className="danger";
-        kick.textContent="Kick";
-        kick.addEventListener("click",()=>{
-          if(!confirm("Kick "+p.name+" from this game?"))return;
-          send({type:"kickPlayer",targetId:p.id});
-        });
-        row.append(kick);
-      }
-    });
-  }
-
-  if(isTeller && !formInitialized){
-    populateForm(latestState.settings||defaultSettings);
-    formInitialized=true;
-  }
+function collect(){
+ const d={};for(const e of $("settingsForm").elements){if(!e.name)continue;d[e.name]=e.type==="checkbox"?e.checked:e.type==="number"?Number(e.value):e.value}
+ d.selectedCharacters=[...document.querySelectorAll("[data-character]:checked")].map(x=>x.value);return d;
 }
-
-function populateForm(settings) {
-  const merged={...defaultSettings,...settings};
-  const form=$("settingsForm");
-
-  for(const [key,value] of Object.entries(merged)){
-    const field=form.elements.namedItem(key);
-    if(!field)continue;
-
-    if(field.type==="checkbox"){
-      field.checked=Boolean(value);
-    } else if(key==="selectedCharacters"){
-      continue;
-    } else {
-      field.value=value;
-    }
-  }
-
-  const selected=new Set(merged.selectedCharacters||[]);
-  document.querySelectorAll("[data-character]").forEach(input=>{
-    input.checked=selected.has(input.value);
-  });
-
-  formDirty=false;
+function showValidation(r){
+ const b=$("validationResults"),er=r.errors||[],w=r.warnings||[];
+ b.className="validation "+(er.length?"error":w.length?"warning":"success");
+ const ul=(t,a)=>a.length?`<p>${t}</p><ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
+ b.innerHTML=`<strong>${er.length?"Script verification found problems":"Script verification passed"}</strong>${ul("Errors:",er)}${ul("Warnings:",w)}${er.length||w.length?"":"<p>No problems were reported.</p>"}`;
 }
+$("verifyScript").onclick=()=>{if(!V.isTeller)return;const b=$("validationResults");b.className="validation warning";b.textContent="Checking script...";send({type:"verifyScript",settings:collect()})};
+$("settingsForm").onsubmit=e=>{e.preventDefault();if(!V.isTeller)return;$("saveStatus").textContent="Saving...";send({type:"saveSettings",settings:collect()})};
 
-function buildCharacters() {
-  const target=$("characterList");
-  const unique=[...new Set(characters)];
+$("players").onclick=e=>{const b=e.target.closest("[data-kick]");if(b&&confirm("Remove this player from the lobby?"))send({type:"kickPlayer",pid:b.dataset.kick})};
+$("joinPlayer").onclick=()=>{const n=$("name").value.trim();if(!n)return setStatus("Enter your name first.");send({type:"join",name:n})};
+$("beTeller").onclick=()=>{const n=$("name").value.trim();if(!n)return setStatus("Enter your name first.");send({type:"claimTeller",name:n})};
+const conf=(t,m)=>{if(V.pub.settings.confirmDestructiveActions&&!confirm(m))return;send({type:t})};
+$("startGame").onclick=()=>conf("startGame","Start the game and assign roles?");
+$("reset").onclick=()=>conf("reset","Reset everyone to the lobby?");
+for(const t of["startDay","startNight","closeVote","execute"])$(t).onclick=()=>send({type:t});
+$("sendInfo").onclick=()=>{send({type:"info",pid:$("tPlayer").value,text:$("tText").value});$("tText").value=""};
+$("killBtn").onclick=()=>{if(confirm("Record this player's death?"))send({type:"kill",pid:$("tPlayer").value})};
+$("assignBtn").onclick=()=>send({type:"assign",pid:$("tPlayer").value,role:$("tRole").value});
 
-  unique.forEach(name=>{
-    const label=document.createElement("label");
-    label.className="check";
-
-    const input=document.createElement("input");
-    input.type="checkbox";
-    input.value=name;
-    input.dataset.character="1";
-
-    const text=document.createElement("span");
-    text.textContent=name;
-
-    label.append(input,text);
-    target.append(label);
-  });
-}
-
-function collectSettings() {
-  const data={};
-
-  for(const element of $("settingsForm").elements){
-    if(!element.name)continue;
-
-    if(element.type==="checkbox"){
-      data[element.name]=element.checked;
-    } else if(element.type==="number"){
-      data[element.name]=Number(element.value);
-    } else {
-      data[element.name]=element.value;
-    }
-  }
-
-  data.selectedCharacters=[
-    ...document.querySelectorAll("[data-character]:checked")
-  ].map(x=>x.value);
-
-  return data;
-}
-
-function displayValidation(result) {
-  const box=$("validationResults");
-  box.replaceChildren();
-  box.classList.remove("hidden");
-
-  const errors=result.errors||[];
-  const warnings=result.warnings||[];
-  const valid=result.valid===true || (errors.length===0 && result.valid!==false);
-
-  box.className="validation "+(errors.length?"error":warnings.length?"warning":"success");
-
-  const heading=document.createElement("strong");
-  heading.textContent=valid?"Script verification passed":"Script verification found problems";
-  box.append(heading);
-
-  if(errors.length){
-    const title=document.createElement("p");
-    title.textContent="Errors:";
-    box.append(title);
-    const list=document.createElement("ul");
-    errors.forEach(item=>{
-      const li=document.createElement("li");
-      li.textContent=typeof item==="string"?item:JSON.stringify(item);
-      list.append(li);
-    });
-    box.append(list);
-  }
-
-  if(warnings.length){
-    const title=document.createElement("p");
-    title.textContent="Warnings:";
-    box.append(title);
-    const list=document.createElement("ul");
-    warnings.forEach(item=>{
-      const li=document.createElement("li");
-      li.textContent=typeof item==="string"?item:JSON.stringify(item);
-      list.append(li);
-    });
-    box.append(list);
-  }
-
-  if(!errors.length && !warnings.length){
-    const p=document.createElement("p");
-    p.textContent="No problems were reported.";
-    box.append(p);
-  }
-}
-
-$("verifyScript").addEventListener("click",()=>{
-  if(!isTeller)return;
-
-  const box=$("validationResults");
-  box.className="validation warning";
-  box.textContent="Checking script...";
-  box.classList.remove("hidden");
-
-  // Send the current form selections for verification.
-  send({type:"verifyScript",settings:collectSettings()});
-});
-
-$("settingsForm").addEventListener("input",()=>{
-  formDirty=true;
-});
-
-$("settingsForm").addEventListener("change",()=>{
-  formDirty=true;
-});
-
-$("joinPlayer").addEventListener("click",()=>{
-  const name=$("name").value.trim();
-  if(!name)return setStatus("Enter your name first.");
-
-  localStorage.setItem("clocktower-player-name",name);
-  send({type:"join",name});
-});
-
-$("beTeller").addEventListener("click",()=>{
-  const name=$("name").value.trim();
-  if(!name)return setStatus("Enter your name first.");
-
-  send({type:"claimTeller",name});
-});
-
-$("settingsForm").addEventListener("submit",event=>{
-  event.preventDefault();
-  if(!isTeller)return;
-
-  $("saveStatus").textContent="Saving...";
-  send({type:"saveSettings",settings:collectSettings()});
-});
-
-$("tabs").addEventListener("click",event=>{
-  const button=event.target.closest("button[data-tab]");
-  if(!button)return;
-
-  document.querySelectorAll(".tabs button").forEach(b=>{
-    b.classList.toggle("active",b===button);
-  });
-
-  document.querySelectorAll(".tabpage").forEach(page=>{
-    page.classList.toggle("hidden",page.dataset.page!==button.dataset.tab);
-  });
-});
-
-function setupGameLink() {
-  const url=location.href.split("#")[0];
-  $("gameLink").textContent=url;
-
-  // The QR image is generated by a remote QR service.
-  $("qrImage").src=
-    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+
-    encodeURIComponent(url);
-}
-
-$("copyLink").addEventListener("click",async()=>{
-  try{
-    await navigator.clipboard.writeText(location.href.split("#")[0]);
-    $("copyStatus").textContent="Game link copied.";
-  }catch{
-    $("copyStatus").textContent="Copy unavailable. Select the link above and copy it.";
-  }
-});
-
-buildCharacters();
-setupGameLink();
+const url=location.href.split("#")[0];
+$("gameLink").textContent=url;
+$("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(url);
+$("copyLink").onclick=async()=>{try{await navigator.clipboard.writeText(url);$("copyStatus").textContent="Game link copied."}catch{$("copyStatus").textContent="Copy unavailable. Select the link above."}};
 connect();
 </script>
 </body>
